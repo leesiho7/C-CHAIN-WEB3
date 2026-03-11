@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>C-Chain | Asset Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .metamask-shadow { box-shadow: 0px 10px 50px rgba(0, 0, 0, 0.1); }
+        /* 하단 잘림 방지: 높이를 고정하지 않고 내용에 따라 늘어나도록 설정 */
+        .wallet-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px 0; }
+        canvas { max-height: 180px !important; }
+        .price-flash { transition: color 0.3s ease; }
+    </style>
+</head>
+<body class="bg-slate-50">
+
+    <div class="wallet-wrapper">
+        <div class="w-full max-w-[420px] bg-white rounded-[32px] overflow-hidden metamask-shadow">
+            
+            <div class="bg-[#24272A] p-4 flex justify-between items-center text-white">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <span class="text-xs font-medium">Sepolia Network Connected</span>
+                </div>
+                <button onclick="location.href='/main'" class="hover:bg-gray-700 p-1 rounded-full transition">
+                    <i class="fa-solid fa-xmark w-5 h-5 flex items-center justify-center text-sm"></i>
+                </button>
+            </div>
+
+            <div class="p-6 flex flex-col items-center border-b border-gray-50">
+                <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-orange-400 to-yellow-200 mb-3 shadow-md"></div>
+                <h2 class="text-lg font-bold text-gray-800">Siho Wallet</h2>
+                <div class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full mt-2 cursor-pointer hover:bg-slate-200 transition">
+                    <span id="displayAddress" class="text-[11px] font-mono text-slate-600 font-bold">0x000...000</span>
+                    <i class="fa-regular fa-copy text-[10px] text-slate-400"></i>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="text-center mb-6">
+                    <h1 id="totalValue" class="text-4xl font-black text-gray-900 mb-1 tracking-tight">0.00 OMT</h1>
+                    <p id="krwValue" class="text-sm text-blue-600 font-bold price-flash">₩ 0 (Bybit Real-time Est.)</p>
+                </div>
+                
+                <div class="mb-4">
+                    <button id="chartBtn" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold text-sm shadow-lg hover:shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-chart-line"></i> 실시간 ETH 캔들 차트 보기
+                    </button>
+                </div>
+
+                <div class="bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-100">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-widest text-center">Asset Value Trend</p>
+                    <canvas id="assetChart"></canvas>
+                </div>
+
+                <div class="flex justify-center gap-8 mb-4">
+                    <div class="flex flex-col items-center gap-2"><button class="w-12 h-12 rounded-full bg-[#037DD6] text-white flex items-center justify-center hover:bg-blue-700 transition"><i class="fa-solid fa-arrow-up"></i></button><span class="text-[11px] font-bold text-slate-500">보내기</span></div>
+                    <div class="flex flex-col items-center gap-2"><button class="w-12 h-12 rounded-full bg-[#037DD6] text-white flex items-center justify-center hover:bg-blue-700 transition"><i class="fa-solid fa-plus"></i></button><span class="text-[11px] font-bold text-slate-500">구매</span></div>
+                    <div class="flex flex-col items-center gap-2"><button class="w-12 h-12 rounded-full bg-[#037DD6] text-white flex items-center justify-center hover:bg-blue-700 transition"><i class="fa-solid fa-shuffle"></i></button><span class="text-[11px] font-bold text-slate-500">스왑</span></div>
+                </div>
+            </div>
+
+            <div class="flex border-t border-gray-100 bg-white">
+                <button class="flex-1 py-4 text-sm font-bold border-b-2 border-[#037DD6] text-[#037DD6]">자산 목록</button>
+                <button class="flex-1 py-4 text-sm font-bold text-gray-400 hover:text-gray-600 transition">활동 내역</button>
+            </div>
+
+            <div class="p-4 space-y-4 bg-white pb-10">
+                <div class="flex justify-between items-center p-3 hover:bg-slate-50 rounded-2xl transition">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg shadow-sm">
+                            <i class="fa-solid fa-coins"></i>
+                        </div>
+                        <div><p class="text-sm font-bold text-gray-800">Orumi Token (OMT)</p><p id="detailBalance" class="text-xs text-slate-500 font-medium font-mono">0.00 OMT</p></div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+                </div>
+
+                <div class="flex justify-between items-center p-3 hover:bg-slate-50 rounded-2xl transition">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600">
+                            <i class="fa-brands fa-ethereum text-sm"></i>
+                        </div>
+                        <div><p class="text-sm font-bold text-gray-800">Sepolia ETH</p><p id="gasBalance" class="text-xs text-slate-500 font-medium font-mono">0.0000 ETH</p></div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="chartModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-[500px] rounded-[30px] overflow-hidden shadow-2xl">
+            <div class="p-4 border-b flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-slate-800"><i class="fa-brands fa-ethereum text-blue-600 mr-2"></i>ETH/USDT LIVE</h3>
+                <button id="closeModalBtn" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+            </div>
+            <div id="candleChart" style="width: 100%; height: 350px;"></div>
+            <div class="p-4 bg-slate-50 text-center border-t">
+                <p class="text-[10px] text-slate-400 font-mono tracking-tighter uppercase font-bold">Powered by Bybit WebSocket & REST API</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let myChart, candleChart, candleSeries, ws;
+        let currentEthPrice = 0;
+        let currentOmtBalance = 0;
+
+        // 에러 방지를 위한 이벤트 리스너 등록
+        document.getElementById('chartBtn').addEventListener('click', openChartModal);
+        document.getElementById('closeModalBtn').addEventListener('click', closeChartModal);
+
+        async function initDashboard() {
+            if (typeof window.ethereum === 'undefined') return;
+            try {
+                const accounts = await ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length === 0) return;
+                const address = accounts[0];
+                document.getElementById('displayAddress').innerText = address.substring(0, 6) + "..." + address.substring(address.length - 4);
+
+                const weiBalance = await ethereum.request({ method: 'eth_getBalance', params: [address, 'latest'] });
+                document.getElementById('gasBalance').innerText = (parseInt(weiBalance, 16) / 1e18).toFixed(4) + " ETH";
+
+                const response = await fetch('/api/token/balance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ walletAddress: address })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    currentOmtBalance = parseFloat(data.balance); 
+                    const formatted = currentOmtBalance.toLocaleString(undefined, {minimumFractionDigits: 2});
+                    document.getElementById('totalValue').innerText = formatted + " OMT";
+                    document.getElementById('detailBalance').innerText = formatted + " OMT";
+                    updateAssetChart(currentOmtBalance);
+                }
+                connectWebSocket();
+            } catch (error) { console.error("초기화 오류:", error); }
+        }
+
+        function connectWebSocket() {
+            if(ws) ws.close();
+            ws = new WebSocket("wss://stream.bybit.com/v5/public/linear");
+            ws.onopen = () => ws.send(JSON.stringify({"op": "subscribe", "args": ["kline.1.ETHUSDT"]}));
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                if(msg.data) {
+                    const k = msg.data[0];
+                    currentEthPrice = parseFloat(k.close);
+                    if(candleSeries) {
+                        candleSeries.update({ 
+                            time: k.start / 1000, open: parseFloat(k.open), 
+                            high: parseFloat(k.high), low: parseFloat(k.low), close: currentEthPrice 
+                        });
+                    }
+                    const calculatedKrw = Math.floor(currentOmtBalance * 0.00001 * currentEthPrice * 1380);
+                    document.getElementById('krwValue').innerText = `₩ ${calculatedKrw.toLocaleString()} (Bybit LIVE)`;
+                }
+            };
+        }
+
+        function openChartModal() {
+            document.getElementById('chartModal').classList.remove('hidden');
+            setTimeout(() => initCandleChart(), 200);
+        }
+
+        function closeChartModal() {
+            document.getElementById('chartModal').classList.add('hidden');
+        }
+
+        async function initCandleChart() {
+            const chartElement = document.getElementById('candleChart');
+            chartElement.innerHTML = ''; 
+            candleChart = LightweightCharts.createChart(chartElement, {
+                layout: { background: { color: '#ffffff' }, textColor: '#333' },
+                grid: { vertLines: { color: '#f0f0f0' }, horzLines: { color: '#f0f0f0' } },
+                timeScale: { timeVisible: true, secondsVisible: false },
+            });
+            candleSeries = candleChart.addCandlestickSeries({
+                upColor: '#26a69a', downColor: '#ef5350', borderVisible: false, wickUpColor: '#26a69a', wickDownColor: '#ef5350'
+            });
+            const res = await fetch("https://api.bybit.com/v5/market/kline?category=linear&symbol=ETHUSDT&interval=1&limit=150");
+            const history = await res.json();
+            candleSeries.setData(history.result.list.map(k => ({
+                time: parseInt(k[0]) / 1000, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4])
+            })).reverse());
+        }
+
+        function updateAssetChart(balance) {
+            const ctx = document.getElementById('assetChart').getContext('2d');
+            if (myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['4일전', '3일전', '어제', '오늘'],
+                    datasets: [{ 
+                        data: [balance * 0.75, balance * 0.9, balance * 0.85, balance], 
+                        borderColor: '#037DD6', backgroundColor: 'rgba(3, 125, 214, 0.05)', 
+                        fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0 
+                    }]
+                },
+                options: { plugins: { legend: { display: false } }, scales: { x: { display: true }, y: { display: false } } }
+            });
+        }
+
+        window.addEventListener('load', initDashboard);
+    </script>
+</body>
+</html>
