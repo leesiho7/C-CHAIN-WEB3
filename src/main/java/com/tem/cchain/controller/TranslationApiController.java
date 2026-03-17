@@ -60,4 +60,68 @@ public class TranslationApiController {
             return ResponseEntity.status(500).body(Map.of("success", false, "message", "서버 오류: " + e.getMessage()));
         }
     }
+
+    @PostMapping("/api/document/add")
+    public ResponseEntity<?> addDocument(@RequestBody Map<String, String> payload, HttpSession session) {
+        Member loginMember = (Member) session.getAttribute("loginMember");
+        if (loginMember == null) {
+            return ResponseEntity.status(401).body(Map.of("message", "로그인이 필요합니다."));
+        }
+
+        try {
+            Document document = Document.builder()
+                    .titleCn(payload.get("titleCn"))
+                    .contentCn(payload.get("contentCn"))
+                    .sourceName(payload.get("sourceName"))
+                    .summary(payload.get("summary"))
+                    .status("PENDING")
+                    .member(loginMember)
+                    .createdAt(java.time.LocalDateTime.now().toString())
+                    .build();
+
+            documentRepository.save(document);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (Exception e) {
+            log.error("🔥 문서 추가 중 오류 발생: ", e);
+            return ResponseEntity.status(500).body(Map.of("message", "서버 오류: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/api/document/delete/{id}")
+    public ResponseEntity<?> deleteDocument(@PathVariable("id") Long id, HttpSession session) {
+        Member loginMember = (Member) session.getAttribute("loginMember");
+        
+        // 관리자 권한 체크 (admin@cchain.com 계정만 삭제 가능)
+        if (loginMember == null || !"admin@cchain.com".equals(loginMember.getEmail())) {
+            return ResponseEntity.status(403).body(Map.of("message", "관리자만 삭제할 수 있습니다."));
+        }
+
+        try {
+            if (!documentRepository.existsById(id)) {
+                return ResponseEntity.status(404).body(Map.of("message", "존재하지 않는 문서입니다."));
+            }
+            
+            documentRepository.deleteById(id);
+            log.info("🗑️ 문서 삭제 성공: ID {}", id);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (Exception e) {
+            log.error("🔥 문서 삭제 중 오류 발생: ", e);
+            return ResponseEntity.status(500).body(Map.of("message", "서버 오류: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 완료된 번역본 조회 API
+     */
+    @GetMapping("/api/translation/completed/{docId}")
+    public ResponseEntity<?> getCompletedTranslation(@PathVariable("docId") Long docId) {
+        return translationRepository.findFirstByDocumentIdAndVerifiedAtIsNotNullOrderByVerifiedAtDesc(docId)
+                .map(t -> ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "contentKr", t.getContentKr(),
+                    "userEmail", t.getUser().getEmail(),
+                    "verifiedAt", t.getVerifiedAt().toString()
+                )))
+                .orElse(ResponseEntity.status(404).body(Map.of("success", false, "message", "완료된 번역본이 없습니다.")));
+    }
 }

@@ -27,11 +27,4 @@ public class MainController {
 		
 		return "main"; // main.html 실행
 	}
-	
-	@GetMapping("/wallet-dashboard")
-	public String walletReport() {
-	    // 반드시 src/main/resources/templates 안에 
-	    // wallet-report.html 파일이 있어야 합니다.
-	    return "wallet-dashboard"; 
-	}
 }

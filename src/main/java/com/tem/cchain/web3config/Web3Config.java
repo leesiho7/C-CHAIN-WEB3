@@ -28,30 +28,48 @@ public class Web3Config {
 
     @Bean
     public Web3j web3j() {
-        return Web3j.build(new HttpService(rpcUrl));
+        if ("none".equals(rpcUrl) || rpcUrl == null || rpcUrl.isEmpty()) {
+            System.err.println("⚠️ [Web3Config] rpcUrl이 'none'이거나 비어있습니다. Web3j 빈이 생성되지 않습니다.");
+            return null;
+        }
+        try {
+            return Web3j.build(new HttpService(rpcUrl));
+        } catch (Exception e) {
+            System.err.println("⚠️ [Web3Config] Web3j 연결 실패: " + e.getMessage());
+            return null;
+        }
     }
 
     /**
      * MyToken 빈을 생성할 때 TransactionManager를 직접 내부에서 생성하여 주입합니다.
-     * 이렇게 하면 Spring의 빈 조회 과정에서의 충돌이나 누락 문제를 완전히 방지할 수 있습니다.
      */
     @Bean
-    public MyToken myToken(Web3j web3j) throws Exception {
-        // 1. 개인키로 Credentials 생성
-        Credentials credentials = Credentials.create(privateKey);
+    public MyToken myToken(Web3j web3j) {
+        if (web3j == null || "none".equals(contractAddress) || "none".equals(privateKey)) {
+            System.err.println("⚠️ [Web3Config] Web3j가 null이거나 contractAddress/privateKey가 'none'입니다. MyToken 빈이 생성되지 않습니다.");
+            return null;
+        }
         
-        // 2. 영수증 처리기 설정 (1초 간격으로 확인)
-        TransactionReceiptProcessor receiptProcessor = new PollingTransactionReceiptProcessor(web3j, 1000, 40);
-        
-        // 3. FastRawTransactionManager 직접 생성 (Nonce 관리용)
-        TransactionManager transactionManager = new FastRawTransactionManager(web3j, credentials, receiptProcessor);
-        
-        // 4. MyToken 로드
-        return MyToken.load(
-            contractAddress, 
-            web3j, 
-            transactionManager, 
-            new DefaultGasProvider()
-        );
+        try {
+            // 1. 개인키로 Credentials 생성
+            Credentials credentials = Credentials.create(privateKey);
+            
+            // 2. 영수증 처리기 설정 (1초 간격으로 확인)
+            TransactionReceiptProcessor receiptProcessor = new PollingTransactionReceiptProcessor(web3j, 1000, 40);
+            
+            // 3. FastRawTransactionManager 직접 생성 (Nonce 관리용)
+            TransactionManager transactionManager = new FastRawTransactionManager(web3j, credentials, receiptProcessor);
+            
+            // 4. MyToken 로드
+            return MyToken.load(
+                contractAddress, 
+                web3j, 
+                transactionManager, 
+                new DefaultGasProvider()
+            );
+        } catch (Exception e) {
+            System.err.println("⚠️ [Web3Config] MyToken 로드 실패: " + e.getMessage());
+            return null;
+        }
     }
 }

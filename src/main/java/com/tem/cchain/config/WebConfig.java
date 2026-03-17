@@ -16,7 +16,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginInterceptor)
                 .addPathPatterns("/**") // 모든 경로 보호
-                .excludePathPatterns("/", "/login", "/join", "/css/**", "/js/**", "/img/**"); // 로그인은 제외
+                .excludePathPatterns("/", "/login", "/join", "/css/**", "/js/**", "/img/**", "/connect", "/wallet", "/api/token/**"); // 메타마스크 관련 경로 제외
                
         // 💡 만약 관리자 콘솔이 계속 튕기면 .excludePathPatterns("/admin/**")를 임시로 추가해서 테스트해 봐.
     }

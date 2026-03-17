@@ -2,6 +2,9 @@ package com.tem.cchain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnore; // 추가 필요
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Data
@@ -16,7 +19,7 @@ public class Document {
     private String titleCn;
     
     @Column(columnDefinition = "TEXT")
-    private String contentCn; // 👈 HTML에서 document.contentCn으로 불러야 합니다!
+    private String contentCn; 
     
     private String sourceName;
     private String summary; 
@@ -28,4 +31,10 @@ public class Document {
     
     @Builder.Default 
     private String status = "PENDING";
+
+    @Builder.Default
+    @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @JsonIgnore // 👈 핵심: JSON 요청/응답 시 이 필드를 무시하게 하여 400 에러를 방지합니다.
+    private List<Translation> translations = new ArrayList<>();
 }

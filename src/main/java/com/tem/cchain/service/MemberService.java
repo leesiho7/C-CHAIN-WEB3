@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class MemberService {
 
     private final MemberRepository memberRepository;
-    private final Web3j web3j;
+    private final org.springframework.beans.factory.ObjectProvider<Web3j> web3jProvider;
 
     @Value("${ethereum.wallet.private-key}")
     private String adminPrivateKey;

@@ -26,9 +26,9 @@ public class AiService {
      */
     public Map<String, Object> verifyTranslation(String originalCn, String userKr) {
         
-        if (apiKey == null || apiKey.isEmpty()) {
-            log.error("❌ OpenAI API 키가 누락되었습니다.");
-            return createErrorMap("API 키를 확인하세요.");
+        if (apiKey == null || apiKey.isEmpty() || "none".equals(apiKey)) {
+            log.error("❌ OpenAI API 키가 누락되었거나 'none'입니다.");
+            return createErrorMap("API 키를 설정해주세요 (application.properties).");
         }
 
         // 1. 프롬프트 구성 (전문 번역가 페르소나 부여)

@@ -28,6 +28,8 @@ public interface TranslationRepository extends JpaRepository<Translation,Long>{
 	//4.관리자용 승인 목록
 	@EntityGraph(attributePaths = {"user", "document"})
 	List<Translation> findByVerifiedAtIsNull();
-	
+
+	// 5. 특정 문서의 완료된 번역본 가져오기 (가장 최근 검증된 것)
+	Optional<Translation> findFirstByDocumentIdAndVerifiedAtIsNotNullOrderByVerifiedAtDesc(Long documentId);
 	
 }

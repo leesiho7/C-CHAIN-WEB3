@@ -1,21 +1,9 @@
 package com.tem.cchain.entity;
 
 import java.time.LocalDateTime;
-import java.util.List;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties; // 추가 권장
 
 @Entity
 @Data
@@ -32,14 +20,16 @@ public class Translation {
     @Column(columnDefinition = "TEXT")
     private String contentKr;
     
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY) // 성능 최적화를 위해 지연 로딩 권장
     @JoinColumn(name = "doc_id")
+    @JsonIgnoreProperties({"translations", "contentCn"}) // 불러올 때 불필요한 필드는 제외하여 무한 루프 방지
+    @ToString.Exclude // 무한 루프 방지
     private Document document;
     
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private Member user;
     
     private String blockchainHash;
     private LocalDateTime verifiedAt; 
-} // 여기서 Translation 클래스 끝!
+}
