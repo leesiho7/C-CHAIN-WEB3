@@ -63,28 +63,64 @@ public class TokenController {
         return "wallet"; 
     }
 
+    /**
+     * 로그인된 회원의 walletaddress를 MetaMask 주소로 연결(덮어쓰기)
+     */
+    @PostMapping("/api/wallet/link")
+    @ResponseBody
+    public Map<String, Object> linkWallet(@RequestBody Map<String, String> payload, HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
+        Member loginMember = (Member) session.getAttribute("loginMember");
+
+        if (loginMember == null) {
+            response.put("success", false);
+            response.put("message", "로그인이 필요합니다. 먼저 로그인해주세요.");
+            return response;
+        }
+
+        String metaMaskAddress = payload.get("walletAddress");
+        if (metaMaskAddress == null || metaMaskAddress.isBlank()) {
+            response.put("success", false);
+            response.put("message", "MetaMask 주소가 없습니다.");
+            return response;
+        }
+
+        // DB의 walletaddress를 MetaMask 주소로 업데이트
+        loginMember.setWalletaddress(metaMaskAddress);
+        memberRepository.save(loginMember);
+
+        // 세션도 최신 상태로 갱신
+        session.setAttribute("loginMember", loginMember);
+        session.setAttribute("userAddress", metaMaskAddress);
+
+        tokenService.syncBalanceAsync(metaMaskAddress);
+
+        response.put("success", true);
+        response.put("message", "지갑 연결 성공");
+        return response;
+    }
+
     @PostMapping("/api/token/balance")
-    @ResponseBody 
+    @ResponseBody
     public Map<String, Object> getBalanceApi(@RequestBody Map<String, String> payload, HttpSession session) {
         String address = payload.get("walletAddress");
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             Member member = memberRepository.findByWalletaddressIgnoreCase(address);
-            
+
             if(member != null) {
                 tokenService.syncBalanceAsync(address);
-                
-                session.setAttribute("loginMember", member); 
+
+                session.setAttribute("loginMember", member);
                 session.setAttribute("userAddress", address);
-                
+
                 response.put("success", true);
                 response.put("message", "지갑 인증 성공");
 
-                // [수정 핵심] 잔액이 null일 경우를 대비해 처리
                 BigDecimal balance = member.getOmtBalance();
-                response.put("balance", (balance != null) ? balance.toString() : "0"); 
-                
+                response.put("balance", (balance != null) ? balance.toString() : "0");
+
             } else {
                 response.put("success", false);
                 response.put("message", "등록된 회원이 아닙니다.");

@@ -94,12 +94,28 @@
     }
 
     async function sendToBackend(address, signature) {
+        // 1단계: 로그인 세션 기반으로 MetaMask 주소를 DB에 연결(덮어쓰기)
+        const linkRes = await fetch('/api/wallet/link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ walletAddress: address })
+        });
+        const linkData = await linkRes.json();
+
+        if (linkData.success) {
+            return true; // 연결 성공
+        }
+
+        // 2단계: 이미 주소가 등록된 경우(재연결 등) 기존 방식으로 fallback
         const res = await fetch('/api/token/balance', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ walletAddress: address, signature: signature })
         });
         const data = await res.json();
+        if (!data.success) {
+            alert(linkData.message || data.message); // 실패 사유 표시
+        }
         return data.success;
     }
 </script>
