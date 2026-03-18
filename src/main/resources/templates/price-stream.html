@@ -210,6 +210,14 @@
             priceTimer = setInterval(simulateUpdate, 2000);
         });
 
+        // bfcache 복원 시 잔액 초기화 (로그아웃 후 이전 값 잔상 방지)
+        window.addEventListener('pageshow', (e) => {
+            if (e.persisted) {
+                document.getElementById('top-balance').innerText = '-- OMT';
+                updateTopBalance();
+            }
+        });
+
         // 3. [핵심] 페이지를 떠날 때 타이머를 즉시 종료!
         window.addEventListener('beforeunload', () => {
             if (priceTimer) {

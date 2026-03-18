@@ -262,6 +262,14 @@
             } catch (e) {}
         }
         updateTopBalance();
+
+        // bfcache 복원 시 잔액 초기화 (로그아웃 후 이전 값 잔상 방지)
+        window.addEventListener('pageshow', (e) => {
+            if (e.persisted) {
+                document.getElementById('top-balance').innerText = '0.0 OMT';
+                updateTopBalance();
+            }
+        });
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </body>
