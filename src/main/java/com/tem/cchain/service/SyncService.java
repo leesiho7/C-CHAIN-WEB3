@@ -62,15 +62,19 @@ public class SyncService {
      */
     public void syncOldBlocks() {
         try {
+            BigInteger latestBlock = web3j.ethBlockNumber().send().getBlockNumber();
+
+            // DB에 진행 상태가 없으면 현재 블록 기준 최근 10,000블록부터 시작
+            // 고정값(5_000_000L) 사용 시 수백만 블록 동기화로 초기 로딩이 수십 분 걸리는 문제 방지
+            long defaultStartBlock = latestBlock.subtract(BigInteger.valueOf(10_000L)).longValue();
             IndexerState state = stateRepository.findById(SERVICE_NAME)
                     .orElse(IndexerState.builder()
                             .serviceName(SERVICE_NAME)
-                            .lastBlockNumber(5_000_000L) // 시작할 블록 번호
+                            .lastBlockNumber(defaultStartBlock)
                             .network("SEPOLIA")
                             .build());
 
             BigInteger fromBlock = BigInteger.valueOf(state.getLastBlockNumber() + 1);
-            BigInteger latestBlock = web3j.ethBlockNumber().send().getBlockNumber();
 
             if (fromBlock.compareTo(latestBlock) > 0) {
                 log.info("[Indexer] 동기화할 새로운 블록이 없습니다.");

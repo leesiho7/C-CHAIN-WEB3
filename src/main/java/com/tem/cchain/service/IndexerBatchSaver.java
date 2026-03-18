@@ -70,6 +70,12 @@ public class IndexerBatchSaver {
     }
 
     private OmtTransaction parseLog(Log logData, Map<String, String> watchTargets) {
+        // topics 개수 검증: ERC-20 Transfer는 반드시 topics[0](서명), [1](from), [2](to) 3개 필요
+        if (logData.getTopics() == null || logData.getTopics().size() < 3) {
+            throw new IllegalArgumentException("topics 부족 (size=" +
+                    (logData.getTopics() == null ? "null" : logData.getTopics().size()) + ")");
+        }
+
         String contractAddr = logData.getAddress().toLowerCase();
         String tokenSymbol = watchTargets.getOrDefault(contractAddr, "UNKNOWN");
 
@@ -77,8 +83,11 @@ public class IndexerBatchSaver {
         String from = "0x" + logData.getTopics().get(1).substring(26);
         String to   = "0x" + logData.getTopics().get(2).substring(26);
 
-        // data 필드에서 value 추출 (hex → BigInteger)
-        BigInteger value = new BigInteger(logData.getData().substring(2), 16);
+        // data 필드에서 value 추출 — null 또는 "0x"(빈 값)이면 0으로 처리
+        String rawData = logData.getData();
+        BigInteger value = (rawData != null && rawData.length() > 2)
+                ? new BigInteger(rawData.substring(2), 16)
+                : BigInteger.ZERO;
 
         return OmtTransaction.builder()
                 .txHash(logData.getTransactionHash())
