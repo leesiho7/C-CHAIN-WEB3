@@ -1,0 +1,92 @@
+// 1. 코인별 고유 설정 추가 (이미지 URL 및 테마 색상)
+        const prices = {
+            BTC: { 
+                symbol: 'BTC', name: 'Bitcoin', price: 52437.82, change24h: 3.42, volume: '$28.5B', marketCap: '$1.02T',
+                icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png',
+                theme: 'from-[#F7931A] to-[#FFAB40]', // 비트코인 오렌지
+                exchanges: [
+                    { name: 'Binance', price: 52438.50, volume: '$8.2B' },
+                    { name: 'Coinbase', price: 52435.20, volume: '$5.1B' },
+                    { name: 'Upbit', price: 52440.10, volume: '$3.8B' }
+                ]
+            },
+            ETH: { 
+                symbol: 'ETH', name: 'Ethereum', price: 1662.45, change24h: 5.67, volume: '$12.3B', marketCap: '$199.8B',
+                icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png',
+                theme: 'from-[#627EEA] to-[#8C9EFF]', // 이더리움 블루
+                exchanges: [
+                    { name: 'Binance', price: 1662.80, volume: '$3.5B' },
+                    { name: 'Coinbase', price: 1661.90, volume: '$2.8B' },
+                    { name: 'Upbit', price: 1663.20, volume: '$1.9B' }
+                ]
+            },
+            SOL: { 
+                symbol: 'SOL', name: 'Solana', price: 98.32, change24h: -2.15, volume: '$1.8B', marketCap: '$41.2B',
+                icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/sol.png',
+                theme: 'from-[#14F195] to-[#9945FF]', // 솔라나 그린-퍼플 그라데이션
+                exchanges: [
+                    { name: 'Binance', price: 98.35, volume: '$580M' },
+                    { name: 'Coinbase', price: 98.28, volume: '$420M' },
+                    { name: 'Upbit', price: 98.40, volume: '$310M' }
+                ]
+            },
+            OMT: { 
+                symbol: 'OMT', name: 'OMT Token', price: 30.0, change24h: 12.5, volume: '$450M', marketCap: '$3.7B',
+                icon: 'https://cdn-icons-png.flaticon.com/512/7075/7075050.png', // OMT 전용 아이콘
+                theme: 'from-blue-600 to-indigo-700',
+                exchanges: [
+                    { name: 'Binance', price: 30.05, volume: '$180M' },
+                    { name: 'Coinbase', price: 29.95, volume: '$120M' },
+                    { name: 'Upbit', price: 30.10, volume: '$95M' }
+                ]
+            }
+        };
+
+        // 2. 렌더링 함수 수정 (글자 대신 이미지 노출)
+        function renderPriceCards() {
+            const container = document.getElementById('price-cards');
+            container.innerHTML = Object.values(prices).map(token => `
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition cursor-pointer overflow-hidden" data-symbol="${token.symbol}">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-gradient-to-br ${token.theme} rounded-xl flex items-center justify-center shadow-inner p-2">
+                                    <img src="${token.icon}" alt="${token.symbol}" class="w-full h-full object-contain brightness-110 contrast-125">
+                                </div>
+                                <div>
+                                    <p class="text-lg font-bold text-gray-900">${token.symbol}</p>
+                                    <p class="text-sm text-gray-500">${token.name}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-2xl font-bold text-gray-900 mb-1">${formatPrice(token.price)}</p>
+                                <div class="flex items-center justify-end gap-1 ${token.change24h > 0 ? 'text-green-600' : 'text-red-600'}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${token.change24h > 0 ? 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' : 'M13 17h8m0 0V9m0 8l-8-8-4 4-6-6'}"></path>
+                                    </svg>
+                                    <span class="text-sm font-semibold">${token.change24h > 0 ? '+' : ''}${token.change24h.toFixed(2)}%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 mb-4">
+                            <p class="text-xs text-gray-500 uppercase font-bold">거래소별 가격</p>
+                            ${token.exchanges.map(ex => `
+                                <div class="flex items-center justify-between text-sm">
+                                    <span class="text-gray-600">${ex.name}</span>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-gray-900 font-semibold">${formatPrice(ex.price)}</span>
+                                        <span class="text-gray-400 text-xs">${ex.volume}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="pt-4 border-t border-gray-200 flex items-center justify-between text-xs text-gray-500">
+                            <span>24h Volume: ${token.volume}</span>
+                            <span>Market Cap: ${token.marketCap}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }

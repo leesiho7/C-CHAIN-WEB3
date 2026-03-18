@@ -9,7 +9,7 @@ import java.util.Map;
 @Service
 public class PriceService {
     private final RestTemplate restTemplate = new RestTemplate();
-    private static final String COINGECKO_URL = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether&vs_currencies=usd&include_24hr_change=true";
+    private static final String COINGECKO_URL = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,tether&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true&include_market_cap=true";
 
     public Map<String, Map<String, Double>> getExternalPrices() {
         try {
