@@ -1,12 +1,83 @@
-// 1. 코인별 고유 설정 추가 (이미지 URL 및 테마 색상)
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C-Chain | 실시간 가격 스트림</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Pretendard', sans-serif; }
+        body {
+            background: linear-gradient(to bottom right, #f9fafb, #dbeafe, #fef3c7);
+            min-height: 100vh;
+        }
+        /* 가격 변동 시 반짝이는 효과 */
+        .price-up { animation: flash-green 0.8s ease; }
+        .price-down { animation: flash-red 0.8s ease; }
+        @keyframes flash-green {
+            0%, 100% { background-color: white; }
+            50% { background-color: rgba(34, 197, 94, 0.1); }
+        }
+        @keyframes flash-red {
+            0%, 100% { background-color: white; }
+            50% { background-color: rgba(239, 68, 68, 0.1); }
+        }
+    </style>
+</head>
+<body>
+    <header class="bg-white border-b px-6 py-4 sticky top-0 z-50 shadow-sm">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-6">
+                <a href="main.html" class="flex items-center space-x-2 text-blue-600">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                    <span class="text-2xl font-bold">C-Chain</span>
+                </a>
+                <nav class="flex items-center gap-4">
+                    <a href="main.html" class="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 font-semibold">대시보드</a>
+                    <a href="transaction-indexer.html" class="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 font-semibold">트랜잭션 인덱서</a>
+                    <a href="price-stream.html" class="px-4 py-2 rounded-lg text-sm bg-blue-50 text-blue-600 font-semibold">실시간 가격</a>
+                </nav>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="text-right mr-4">
+                    <p class="text-xs text-gray-400 font-bold uppercase">My Rewards</p>
+                    <p class="text-sm text-blue-600 font-bold">487,650 OMT</p>
+                </div>
+                <button class="px-5 py-2 bg-white border border-gray-200 rounded-xl font-bold shadow-sm hover:bg-gray-50 transition">지갑 연결</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="p-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 italic">Live Price Stream</h1>
+                    <p class="text-gray-500">실시간 온체인 및 거래소 가격 데이터를 모니터링합니다.</p>
+                </div>
+                <div class="flex gap-3">
+                    <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-sm font-bold text-gray-600">Update: <span id="update-count">0</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="price-cards">
+                </div>
+        </div>
+    </main>
+
+    <script>
+        // 1. 코인 데이터 설정 (아이콘 URL 및 테마 컬러 포함)
         const prices = {
             BTC: { 
                 symbol: 'BTC', name: 'Bitcoin', price: 52437.82, change24h: 3.42, volume: '$28.5B', marketCap: '$1.02T',
                 icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png',
-                theme: 'from-[#F7931A] to-[#FFAB40]', // 비트코인 오렌지
+                theme: 'from-[#F7931A] to-[#FFAB40]', // 정통 비트코인 오렌지
                 exchanges: [
                     { name: 'Binance', price: 52438.50, volume: '$8.2B' },
-                    { name: 'Coinbase', price: 52435.20, volume: '$5.1B' },
                     { name: 'Upbit', price: 52440.10, volume: '$3.8B' }
                 ]
             },
@@ -16,77 +87,102 @@
                 theme: 'from-[#627EEA] to-[#8C9EFF]', // 이더리움 블루
                 exchanges: [
                     { name: 'Binance', price: 1662.80, volume: '$3.5B' },
-                    { name: 'Coinbase', price: 1661.90, volume: '$2.8B' },
-                    { name: 'Upbit', price: 1663.20, volume: '$1.9B' }
+                    { name: 'Coinbase', price: 1661.90, volume: '$2.8B' }
                 ]
             },
             SOL: { 
                 symbol: 'SOL', name: 'Solana', price: 98.32, change24h: -2.15, volume: '$1.8B', marketCap: '$41.2B',
                 icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/sol.png',
-                theme: 'from-[#14F195] to-[#9945FF]', // 솔라나 그린-퍼플 그라데이션
+                theme: 'from-[#14F195] to-[#9945FF]', // 솔라나 그라데이션
                 exchanges: [
                     { name: 'Binance', price: 98.35, volume: '$580M' },
-                    { name: 'Coinbase', price: 98.28, volume: '$420M' },
                     { name: 'Upbit', price: 98.40, volume: '$310M' }
                 ]
             },
             OMT: { 
                 symbol: 'OMT', name: 'OMT Token', price: 30.0, change24h: 12.5, volume: '$450M', marketCap: '$3.7B',
-                icon: 'https://cdn-icons-png.flaticon.com/512/7075/7075050.png', // OMT 전용 아이콘
+                icon: 'https://cdn-icons-png.flaticon.com/512/7075/7075050.png',
                 theme: 'from-blue-600 to-indigo-700',
                 exchanges: [
-                    { name: 'Binance', price: 30.05, volume: '$180M' },
-                    { name: 'Coinbase', price: 29.95, volume: '$120M' },
-                    { name: 'Upbit', price: 30.10, volume: '$95M' }
+                    { name: 'C-Chain', price: 30.00, volume: '$450M' }
                 ]
             }
         };
 
-        // 2. 렌더링 함수 수정 (글자 대신 이미지 노출)
+        let updateCount = 0;
+
+        function formatPrice(price) {
+            return price >= 100 ? `$${price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : `$${price.toFixed(4)}`;
+        }
+
+        // 2. 렌더링 함수
         function renderPriceCards() {
             const container = document.getElementById('price-cards');
+            if(!container) return;
+
             container.innerHTML = Object.values(prices).map(token => `
-                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition cursor-pointer overflow-hidden" data-symbol="${token.symbol}">
+                <div class="bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group" data-symbol="${token.symbol}">
                     <div class="p-6">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-12 h-12 bg-gradient-to-br ${token.theme} rounded-xl flex items-center justify-center shadow-inner p-2">
-                                    <img src="${token.icon}" alt="${token.symbol}" class="w-full h-full object-contain brightness-110 contrast-125">
-                                </div>
-                                <div>
-                                    <p class="text-lg font-bold text-gray-900">${token.symbol}</p>
-                                    <p class="text-sm text-gray-500">${token.name}</p>
-                                </div>
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="w-14 h-14 bg-gradient-to-br ${token.theme} rounded-2xl flex items-center justify-center p-2.5 shadow-lg group-hover:scale-110 transition-transform">
+                                <img src="${token.icon}" alt="${token.symbol}" class="w-full h-full object-contain brightness-110 contrast-125">
                             </div>
                             <div class="text-right">
-                                <p class="text-2xl font-bold text-gray-900 mb-1">${formatPrice(token.price)}</p>
-                                <div class="flex items-center justify-end gap-1 ${token.change24h > 0 ? 'text-green-600' : 'text-red-600'}">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${token.change24h > 0 ? 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' : 'M13 17h8m0 0V9m0 8l-8-8-4 4-6-6'}"></path>
-                                    </svg>
-                                    <span class="text-sm font-semibold">${token.change24h > 0 ? '+' : ''}${token.change24h.toFixed(2)}%</span>
-                                </div>
+                                <p class="text-xs font-black text-gray-400 uppercase tracking-widest">${token.name}</p>
+                                <p class="text-2xl font-black text-gray-900 leading-tight">${token.symbol}</p>
                             </div>
                         </div>
 
-                        <div class="space-y-2 mb-4">
-                            <p class="text-xs text-gray-500 uppercase font-bold">거래소별 가격</p>
-                            ${token.exchanges.map(ex => `
-                                <div class="flex items-center justify-between text-sm">
-                                    <span class="text-gray-600">${ex.name}</span>
-                                    <div class="flex items-center gap-3">
-                                        <span class="text-gray-900 font-semibold">${formatPrice(ex.price)}</span>
-                                        <span class="text-gray-400 text-xs">${ex.volume}</span>
-                                    </div>
-                                </div>
-                            `).join('')}
+                        <div class="mb-6 text-center py-4 bg-gray-50 rounded-2xl border border-gray-100 shadow-inner">
+                            <p class="text-3xl font-black text-gray-900 mb-1 tracking-tighter">${formatPrice(token.price)}</p>
+                            <span class="text-sm font-bold ${token.change24h > 0 ? 'text-green-500' : 'text-red-500'}">
+                                ${token.change24h > 0 ? '▲' : '▼'} ${Math.abs(token.change24h).toFixed(2)}%
+                            </span>
                         </div>
 
-                        <div class="pt-4 border-t border-gray-200 flex items-center justify-between text-xs text-gray-500">
-                            <span>24h Volume: ${token.volume}</span>
-                            <span>Market Cap: ${token.marketCap}</span>
+                        <div class="space-y-3">
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b pb-1">Top Exchanges</p>
+                            ${token.exchanges.map(ex => `
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold text-gray-600">${ex.name}</span>
+                                    <span class="text-xs font-black text-gray-900">${formatPrice(ex.price)}</span>
+                                </div>
+                            `).join('')}
                         </div>
                     </div>
                 </div>
             `).join('');
         }
+
+        // 3. 가격 업데이트 시뮬레이션
+        function simulatePriceUpdate() {
+            Object.keys(prices).forEach(symbol => {
+                const token = prices[symbol];
+                const oldPrice = token.price;
+                const change = 1 + (Math.random() - 0.5) * 0.005; // ±0.5% 변동
+                token.price *= change;
+
+                // 거래소 가격도 동기화
+                token.exchanges.forEach(ex => ex.price *= (1 + (Math.random() - 0.5) * 0.002));
+
+                const card = document.querySelector(`[data-symbol="${symbol}"]`);
+                if (card) {
+                    card.classList.remove('price-up', 'price-down');
+                    void card.offsetWidth; // 리플로우 트리거 (애니메이션 재시작)
+                    card.classList.add(token.price > oldPrice ? 'price-up' : 'price-down');
+                }
+            });
+
+            updateCount++;
+            document.getElementById('update-count').innerText = updateCount;
+            renderPriceCards();
+        }
+
+        // 초기 실행 및 2초 간격 업데이트
+        document.addEventListener('DOMContentLoaded', () => {
+            renderPriceCards();
+            setInterval(simulatePriceUpdate, 2000);
+        });
+    </script>
+</body>
+</html>
