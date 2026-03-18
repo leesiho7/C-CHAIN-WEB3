@@ -112,11 +112,8 @@ public class TokenController {
             if(member != null) {
                 tokenService.syncBalanceAsync(address);
 
-                session.setAttribute("loginMember", member);
-                session.setAttribute("userAddress", address);
-
                 response.put("success", true);
-                response.put("message", "지갑 인증 성공");
+                response.put("message", "잔액 조회 성공");
 
                 BigDecimal balance = member.getOmtBalance();
                 response.put("balance", (balance != null) ? balance.toString() : "0");
