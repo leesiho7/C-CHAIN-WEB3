@@ -24,4 +24,9 @@ public class PageController {
     public String pricePage() {
         return "price-stream";
     }
+
+    @GetMapping("/wallet-server")
+    public String walletServerPage() {
+        return "wallet-server";
+    }
 }
