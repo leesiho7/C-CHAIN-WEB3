@@ -233,7 +233,14 @@
         // 지갑 잔액 업데이트 (상단 바)
         async function updateTopBalance() {
             try {
-                const res = await fetch('/api/token/balance', { method: 'POST' });
+                if (typeof window.ethereum === 'undefined') return;
+                const accounts = await ethereum.request({ method: 'eth_accounts' });
+                if (!accounts || accounts.length === 0) return;
+                const res = await fetch('/api/token/balance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ walletAddress: accounts[0] })
+                });
                 if (res.ok) {
                     const data = await res.json();
                     document.getElementById('top-balance').innerText = data.balance + " OMT";
