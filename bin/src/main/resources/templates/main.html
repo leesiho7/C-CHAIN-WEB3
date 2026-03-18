@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C-Chain | Contribution Workspace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .slide-panel { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .doc-completed {
+            background-color: #f3f4f6 !important;
+            opacity: 0.7;
+            border-color: #d1d5db !important;
+            pointer-events: none;
+            position: relative;
+        }
+        .completed-badge {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            border: 3px solid #9ca3af; color: #9ca3af;
+            padding: 4px 12px; font-weight: 900;
+            text-transform: uppercase; border-radius: 8px;
+            z-index: 10; background: rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 h-screen overflow-hidden">
+
+    <header class="bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm relative z-30">
+        <div class="flex items-center space-x-2">
+            <span class="text-blue-600 text-2xl font-bold"><i class="fa-solid fa-link"></i> C-Chain</span>
+            <span class="text-gray-400">|</span>
+            <h1 class="text-lg font-semibold text-gray-700">한-중 기술 기여 대시보드</h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="text-right mr-4">
+                <p class="text-[10px] text-gray-400 uppercase font-bold">My Rewards</p>
+                <p class="text-sm font-bold text-blue-600"><span id="top-balance">0.0</span> OMT</p>
+            </div>
+            <a href="/connect" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition shadow-sm">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" class="w-5 h-5">
+                <span class="text-sm">지갑 연결</span>
+            </a>
+            <button onclick="location.href='/mypage'" class="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-black transition">마이페이지</button>
+            <button onclick="logoutAll()" class="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-100 transition">로그아웃</button>
+            
+            <button th:if="${session.loginMember != null and session.loginMember.email == 'admin@cchain.com'}"
+                    onclick="location.href='/admin'" 
+                    class="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-100 transition flex items-center gap-2">
+                <i class="fa-solid fa-lock-open"></i> 관리자 콘솔
+            </button>
+        </div>
+    </header>
+
+    <main class="p-8 h-[calc(100vh-73px)] overflow-y-auto">
+        <div class="max-w-6xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-gray-900">검증 대기 중인 기술 문서</h2>
+                <p class="text-gray-500 mt-2">중국 최신 기술 문서를 번역하고 블록체인 보상을 획득하세요.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div th:each="doc : ${documents}" 
+                     th:data-id="${doc.id}" 
+                     th:data-source="${doc.sourceName}"
+                     th:data-title="${doc.titleCn}"
+                     th:data-content="${doc.contentCn}"
+                     onclick="openWorkspace(this)" 
+                     th:classappend="${doc.status == 'COMPLETED' ? 'doc-completed' : ''}"
+                     class="group bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl hover:border-blue-400 transition-all cursor-pointer relative">
+                    
+                    <div th:if="${doc.status == 'COMPLETED'}" class="completed-badge">Completed</div>
+                    
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-1 rounded uppercase">CN -> KR</span>
+                        <i class="fa-solid fa-chevron-right text-gray-300 group-hover:text-blue-500 transition"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800 group-hover:text-blue-600 mb-2" th:text="${doc.titleCn}">제목</h3>
+                    <p class="text-sm text-gray-500 line-clamp-2 mb-4" th:text="${doc.summary}">요약...</p>
+                    <div class="flex items-center text-xs text-gray-400 space-x-3 border-t pt-4">
+                        <span><i class="fa-regular fa-user mr-1"></i> <span th:text="${doc.sourceName}">출처</span></span>
+                        <span><i class="fa-regular fa-clock mr-1"></i> <span th:text="${doc.createdAt}">날짜</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="overlay" onclick="closeWorkspace()" class="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300"></div>
+    
+    <div id="workspace" class="slide-panel fixed inset-y-0 right-0 w-[92%] bg-white z-50 shadow-2xl transform translate-x-full flex flex-col">
+        <div class="px-6 py-4 border-b flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <button onclick="closeWorkspace()" class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center">
+                    <i class="fa-solid fa-arrow-left text-gray-500"></i>
+                </button>
+                <div>
+                    <h2 id="ws-title" class="font-bold text-gray-900">문서 제목</h2>
+                    <p id="ws-source" class="text-xs text-gray-500 uppercase">Source: Loading...</p>
+                </div>
+            </div>
+            <button onclick="submitWork()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg transition-all active:scale-95">
+                작성 완료 및 검증 요청
+            </button>
+        </div>
+
+        <div class="flex-1 flex overflow-hidden">
+            <div class="flex-1 flex flex-col border-r bg-gray-50/50">
+                <div class="p-3 bg-gray-100/50 border-b px-8 text-[10px] font-black text-gray-400">ORIGINAL (CN)</div>
+                <div id="original-content" class="flex-1 p-10 overflow-y-auto bg-white prose max-w-none">
+                    </div>
+            </div>
+            <div class="flex-1 flex flex-col bg-white">
+                <div class="p-3 bg-blue-50 border-b px-8 text-[10px] font-black text-blue-600">TRANSLATION (KR)</div>
+                <div class="flex-1 p-10 bg-blue-50/10">
+                    <textarea id="translation-input" class="w-full h-full bg-transparent border-none focus:ring-0 text-xl leading-relaxed text-gray-800 placeholder:text-gray-300 resize-none" 
+                    placeholder="이곳에 번역본을 작성해 주세요..."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let currentDocId = null; // 현재 번역 중인 문서 ID 저장 변수
+
+    function openWorkspace(element) {
+        currentDocId = element.dataset.id; // 클릭한 카드의 ID를 변수에 저장
+        const title = element.dataset.title;
+        const source = element.dataset.source;
+        const content = element.dataset.content;
+
+        document.getElementById('ws-title').innerText = title;
+        document.getElementById('ws-source').innerText = `Source: ${source}`;
+        document.getElementById('original-content').innerHTML = `
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">${title}</h2>
+            <p class="text-lg leading-relaxed text-gray-700">${content}</p>
+        `;
+
+        document.getElementById('workspace').classList.remove('translate-x-full');
+        document.getElementById('overlay').classList.remove('hidden');
+        setTimeout(() => document.getElementById('overlay').classList.add('opacity-100'), 10);
+    }
+
+    function closeWorkspace() {
+        document.getElementById('workspace').classList.add('translate-x-full');
+        document.getElementById('overlay').classList.remove('opacity-100');
+        setTimeout(() => document.getElementById('overlay').classList.add('hidden'), 300);
+    }
+
+    async function submitWork() {
+        const content = document.getElementById('translation-input').value;
+        if(!content) return alert("번역 내용을 입력해주세요!");
+
+        if(confirm('검증 요청을 보내시겠습니까?')) {
+            try {
+                // 로딩 인디케이터 시작
+                document.getElementById('tx-loader').classList.replace('hidden', 'flex');
+
+                const response = await fetch('/api/translation/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        documentId: currentDocId, // 👈 동적으로 바뀐 진짜 ID 전송!
+                        contentKr: content, 
+                        blockchainHash: "0x" + Math.random().toString(16).slice(2) // 임시 해시
+                    })
+                });
+
+                if(response.ok) {
+                    alert("제출 완료! 관리자 승인 후 보상이 지급됩니다.");
+                    location.reload();
+                } else {
+                    const err = await response.json();
+                    alert("실패: " + err.message);
+                }
+            } catch (error) {
+                console.error(error);
+                alert("서버 통신 실패");
+            } finally {
+                document.getElementById('tx-loader').classList.replace('flex', 'hidden');
+            }
+        }
+    }
+
+    function logoutAll() {
+        sessionStorage.clear();
+        localStorage.clear();
+        location.href = '/logout';
+    }
+</script>
+
+<div id="tx-loader" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] hidden flex-col items-center justify-center text-white">
+    <div class="w-20 h-20 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+    <p class="mt-6 font-bold">C-Chain 네트워크에 기록 중...</p>
+</div>
+
+</body>
+</html>
