@@ -45,7 +45,7 @@
             <div class="flex items-center gap-3">
                 <div class="text-right mr-4">
                     <p class="text-xs text-gray-400 font-bold uppercase">My Rewards</p>
-                    <p class="text-sm text-blue-600 font-bold">487,650 OMT</p>
+                    <p class="text-sm text-blue-600 font-bold" id="top-balance">-- OMT</p>
                 </div>
                 <button class="px-5 py-2 bg-white border border-gray-200 rounded-xl font-bold shadow-sm hover:bg-gray-50">지갑 연결</button>
             </div>
@@ -182,13 +182,31 @@
             setInterval(simulateUpdate, 2000);
         });
         
-     // 1. 타이머 변수를 전역으로 선언
+        // My Rewards 잔액 로드 (MetaMask 연결 시)
+        async function updateTopBalance() {
+            try {
+                if (typeof window.ethereum === 'undefined') return;
+                const accounts = await ethereum.request({ method: 'eth_accounts' });
+                if (!accounts || accounts.length === 0) return;
+                const res = await fetch('/api/token/balance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ walletAddress: accounts[0] })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('top-balance').innerText = data.balance + ' OMT';
+                }
+            } catch (e) {}
+        }
+
+        // 1. 타이머 변수를 전역으로 선언
         let priceTimer;
 
         // 2. 실행 부분을 이렇게 수정
         document.addEventListener('DOMContentLoaded', () => {
             renderPriceCards();
-            // 타이머를 변수에 할당합니다.
+            updateTopBalance();
             priceTimer = setInterval(simulateUpdate, 2000);
         });
 
