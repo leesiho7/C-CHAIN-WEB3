@@ -181,6 +181,24 @@
             renderPriceCards();
             setInterval(simulateUpdate, 2000);
         });
+        
+     // 1. 타이머 변수를 전역으로 선언
+        let priceTimer;
+
+        // 2. 실행 부분을 이렇게 수정
+        document.addEventListener('DOMContentLoaded', () => {
+            renderPriceCards();
+            // 타이머를 변수에 할당합니다.
+            priceTimer = setInterval(simulateUpdate, 2000);
+        });
+
+        // 3. [핵심] 페이지를 떠날 때 타이머를 즉시 종료!
+        window.addEventListener('beforeunload', () => {
+            if (priceTimer) {
+                clearInterval(priceTimer);
+                console.log("실시간 스트림 종료 - 메모리 해제");
+            }
+        });
     </script>
 </body>
 </html>

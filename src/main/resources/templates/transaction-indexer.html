@@ -37,6 +37,7 @@
                     </a>
                     <a href="/exchange" class="px-4 py-2 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-50 transition">지갑 & 거래소</a>
                     <a href="/price" class="px-4 py-2 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-50 transition">실시간 가격</a>
+                    <a href="/wallet-server" class="px-4 py-2 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-50 transition">지갑 서버</a>
                 </nav>
             </div>
             <div class="flex items-center gap-4">
@@ -174,7 +175,20 @@
                 
                 const tbody = document.getElementById('transactions-table');
                 
-                if (data.length > 0) {
+                if (data.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="px-6 py-20 text-center text-gray-400">
+                                <div class="flex flex-col items-center">
+                                    <svg class="w-10 h-10 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                                    </svg>
+                                    <p class="font-bold text-gray-500">인덱싱된 트랜잭션이 없습니다</p>
+                                    <p class="text-xs text-gray-400 mt-1">RPC 연결 후 블록 동기화가 완료되면 자동으로 표시됩니다.</p>
+                                </div>
+                            </td>
+                        </tr>`;
+                } else {
                     tbody.innerHTML = data.map(tx => {
                         // OMT 거래인 경우 강조 스타일 적용
                         const isOMT = tx.tokenSymbol === 'OMT';
