@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -45,9 +45,16 @@
                     <p class="text-[10px] text-gray-400 uppercase font-black">My Rewards</p>
                     <p class="text-sm text-blue-600 font-bold" id="top-balance">0.0 OMT</p>
                 </div>
-                <button class="px-5 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-black transition shadow-lg active:scale-95">
-                    지갑 연결
-                </button>
+                <div th:if="${session.loginMember == null}" class="flex items-center gap-2">
+                    <a href="/join" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-50 transition">회원가입</a>
+                    <a href="/login" class="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition shadow-md">
+                        <i class="fa-solid fa-right-to-bracket text-xs"></i> 로그인
+                    </a>
+                </div>
+                <div th:if="${session.loginMember != null}" class="flex items-center gap-2">
+                    <button onclick="location.href='/mypage'" class="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-black transition">마이페이지</button>
+                    <button onclick="location.href='/logout'" class="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 transition">로그아웃</button>
+                </div>
             </div>
         </div>
     </header>
