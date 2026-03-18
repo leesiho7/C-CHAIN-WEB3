@@ -6,13 +6,13 @@
     <title>C-Chain | 실시간 가격 스트림</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { font-family: 'Pretendard', sans-serif; }
         body {
             background: linear-gradient(to bottom right, #f9fafb, #dbeafe, #fef3c7);
             min-height: 100vh;
         }
-        /* 가격 변동 시 반짝이는 효과 */
         .price-up { animation: flash-green 0.8s ease; }
         .price-down { animation: flash-red 0.8s ease; }
         @keyframes flash-green {
@@ -33,10 +33,13 @@
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
                     <span class="text-2xl font-bold">C-Chain</span>
                 </a>
+                <span class="text-gray-400">|</span>
                 <nav class="flex items-center gap-4">
-                    <a href="main.html" class="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 font-semibold">대시보드</a>
-                    <a href="transaction-indexer.html" class="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 font-semibold">트랜잭션 인덱서</a>
-                    <a href="price-stream.html" class="px-4 py-2 rounded-lg text-sm bg-blue-50 text-blue-600 font-semibold">실시간 가격</a>
+                    <a href="main.html" class="px-4 py-2 rounded-lg text-sm transition text-gray-600 hover:bg-gray-50 font-semibold">대시보드</a>
+                    <a href="transaction-indexer.html" class="px-4 py-2 rounded-lg text-sm transition text-gray-600 hover:bg-gray-50 font-semibold">트랜잭션 인덱서</a>
+                    <a href="wallet-exchange.html" class="px-4 py-2 rounded-lg text-sm transition text-gray-600 hover:bg-gray-50 font-semibold">지갑 & 거래소</a>
+                    <a href="price-stream.html" class="px-4 py-2 rounded-lg text-sm transition bg-blue-50 text-blue-600 font-semibold">실시간 가격</a>
+                    <a href="wallet-server.html" class="px-4 py-2 rounded-lg text-sm transition text-gray-600 hover:bg-gray-50 font-semibold">지갑 서버</a>
                 </nav>
             </div>
             <div class="flex items-center gap-3">
@@ -44,7 +47,7 @@
                     <p class="text-xs text-gray-400 font-bold uppercase">My Rewards</p>
                     <p class="text-sm text-blue-600 font-bold">487,650 OMT</p>
                 </div>
-                <button class="px-5 py-2 bg-white border border-gray-200 rounded-xl font-bold shadow-sm hover:bg-gray-50 transition">지갑 연결</button>
+                <button class="px-5 py-2 bg-white border border-gray-200 rounded-xl font-bold shadow-sm hover:bg-gray-50">지갑 연결</button>
             </div>
         </div>
     </header>
@@ -54,98 +57,96 @@
             <div class="flex items-center justify-between mb-8">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900 italic">Live Price Stream</h1>
-                    <p class="text-gray-500">실시간 온체인 및 거래소 가격 데이터를 모니터링합니다.</p>
+                    <p class="text-gray-500 mt-1">실시간 가격 변동 및 마켓 알림을 확인하세요.</p>
                 </div>
-                <div class="flex gap-3">
-                    <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-sm">
-                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span class="text-sm font-bold text-gray-600">Update: <span id="update-count">0</span></span>
-                    </div>
+                <div class="bg-white px-5 py-2.5 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-3">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-sm font-bold text-gray-600 uppercase tracking-tighter">Updates: <span id="update-count" class="text-blue-600">0</span></span>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="price-cards">
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="price-cards"></div>
         </div>
     </main>
 
+    <div id="alert-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3"></div>
+
     <script>
-        // 1. 코인 데이터 설정 (아이콘 URL 및 테마 컬러 포함)
         const prices = {
             BTC: { 
-                symbol: 'BTC', name: 'Bitcoin', price: 52437.82, change24h: 3.42, volume: '$28.5B', marketCap: '$1.02T',
+                symbol: 'BTC', name: 'Bitcoin', price: 52437.82, change24h: 3.42,
                 icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png',
-                theme: 'from-[#F7931A] to-[#FFAB40]', // 정통 비트코인 오렌지
-                exchanges: [
-                    { name: 'Binance', price: 52438.50, volume: '$8.2B' },
-                    { name: 'Upbit', price: 52440.10, volume: '$3.8B' }
-                ]
+                theme: 'from-[#F7931A] to-[#FFAB40]',
+                exchanges: [{ name: 'Binance', price: 52438.50 }, { name: 'Upbit', price: 52440.10 }]
             },
             ETH: { 
-                symbol: 'ETH', name: 'Ethereum', price: 1662.45, change24h: 5.67, volume: '$12.3B', marketCap: '$199.8B',
+                symbol: 'ETH', name: 'Ethereum', price: 1662.45, change24h: 5.67,
                 icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png',
-                theme: 'from-[#627EEA] to-[#8C9EFF]', // 이더리움 블루
-                exchanges: [
-                    { name: 'Binance', price: 1662.80, volume: '$3.5B' },
-                    { name: 'Coinbase', price: 1661.90, volume: '$2.8B' }
-                ]
+                theme: 'from-[#627EEA] to-[#8C9EFF]',
+                exchanges: [{ name: 'Binance', price: 1662.80 }, { name: 'Coinbase', price: 1661.90 }]
             },
             SOL: { 
-                symbol: 'SOL', name: 'Solana', price: 98.32, change24h: -2.15, volume: '$1.8B', marketCap: '$41.2B',
+                symbol: 'SOL', name: 'Solana', price: 98.32, change24h: -2.15,
                 icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/sol.png',
-                theme: 'from-[#14F195] to-[#9945FF]', // 솔라나 그라데이션
-                exchanges: [
-                    { name: 'Binance', price: 98.35, volume: '$580M' },
-                    { name: 'Upbit', price: 98.40, volume: '$310M' }
-                ]
+                theme: 'from-[#14F195] to-[#9945FF]',
+                exchanges: [{ name: 'Binance', price: 98.35 }, { name: 'Upbit', price: 98.40 }]
             },
             OMT: { 
-                symbol: 'OMT', name: 'OMT Token', price: 30.0, change24h: 12.5, volume: '$450M', marketCap: '$3.7B',
+                symbol: 'OMT', name: 'OMT Token', price: 30.0, change24h: 12.5,
                 icon: 'https://cdn-icons-png.flaticon.com/512/7075/7075050.png',
                 theme: 'from-blue-600 to-indigo-700',
-                exchanges: [
-                    { name: 'C-Chain', price: 30.00, volume: '$450M' }
-                ]
+                exchanges: [{ name: 'C-Chain', price: 30.00 }]
             }
         };
 
         let updateCount = 0;
 
-        function formatPrice(price) {
-            return price >= 100 ? `$${price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : `$${price.toFixed(4)}`;
+        // 알림 기능 함수
+        function showPriceAlert(symbol, change) {
+            const container = document.getElementById('alert-container');
+            const alert = document.createElement('div');
+            const color = change > 0 ? 'bg-green-600' : 'bg-red-600';
+            const icon = change > 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
+
+            alert.className = `${color} text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 transform translate-y-10 opacity-0 transition-all duration-500 font-bold text-xs`;
+            alert.innerHTML = `
+                <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center"><i class="fa-solid ${icon}"></i></div>
+                <span>${symbol} 변동: ${change > 0 ? '+' : ''}${change.toFixed(2)}% 감지</span>
+            `;
+
+            container.appendChild(alert);
+            setTimeout(() => alert.classList.remove('translate-y-10', 'opacity-0'), 50);
+            setTimeout(() => {
+                alert.classList.add('opacity-0', 'scale-90');
+                setTimeout(() => alert.remove(), 500);
+            }, 3000);
         }
 
-        // 2. 렌더링 함수
         function renderPriceCards() {
             const container = document.getElementById('price-cards');
-            if(!container) return;
-
             container.innerHTML = Object.values(prices).map(token => `
-                <div class="bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group" data-symbol="${token.symbol}">
+                <div class="bg-white rounded-3xl border border-gray-100 shadow-sm transition-all duration-300 overflow-hidden group" data-symbol="${token.symbol}">
                     <div class="p-6">
                         <div class="flex items-center justify-between mb-6">
-                            <div class="w-14 h-14 bg-gradient-to-br ${token.theme} rounded-2xl flex items-center justify-center p-2.5 shadow-lg group-hover:scale-110 transition-transform">
-                                <img src="${token.icon}" alt="${token.symbol}" class="w-full h-full object-contain brightness-110 contrast-125">
+                            <div class="w-14 h-14 bg-gradient-to-br ${token.theme} rounded-2xl flex items-center justify-center p-2.5 shadow-lg group-hover:rotate-6 transition-transform">
+                                <img src="${token.icon}" class="w-full h-full object-contain">
                             </div>
                             <div class="text-right">
-                                <p class="text-xs font-black text-gray-400 uppercase tracking-widest">${token.name}</p>
-                                <p class="text-2xl font-black text-gray-900 leading-tight">${token.symbol}</p>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">${token.name}</p>
+                                <p class="text-2xl font-black text-gray-900">${token.symbol}</p>
                             </div>
                         </div>
-
-                        <div class="mb-6 text-center py-4 bg-gray-50 rounded-2xl border border-gray-100 shadow-inner">
-                            <p class="text-3xl font-black text-gray-900 mb-1 tracking-tighter">${formatPrice(token.price)}</p>
-                            <span class="text-sm font-bold ${token.change24h > 0 ? 'text-green-500' : 'text-red-500'}">
+                        <div class="mb-6 text-center py-4 bg-gray-50 rounded-2xl border border-gray-100">
+                            <p class="text-3xl font-black text-gray-900 mb-1">$${token.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                            <span class="text-xs font-bold ${token.change24h > 0 ? 'text-green-500' : 'text-red-500'}">
                                 ${token.change24h > 0 ? '▲' : '▼'} ${Math.abs(token.change24h).toFixed(2)}%
                             </span>
                         </div>
-
-                        <div class="space-y-3">
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b pb-1">Top Exchanges</p>
+                        <div class="space-y-2">
                             ${token.exchanges.map(ex => `
-                                <div class="flex justify-between items-center">
-                                    <span class="text-xs font-bold text-gray-600">${ex.name}</span>
-                                    <span class="text-xs font-black text-gray-900">${formatPrice(ex.price)}</span>
+                                <div class="flex justify-between text-[11px] font-bold">
+                                    <span class="text-gray-500">${ex.name}</span>
+                                    <span class="text-gray-900">$${ex.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                                 </div>
                             `).join('')}
                         </div>
@@ -154,34 +155,31 @@
             `).join('');
         }
 
-        // 3. 가격 업데이트 시뮬레이션
-        function simulatePriceUpdate() {
+        function simulateUpdate() {
             Object.keys(prices).forEach(symbol => {
                 const token = prices[symbol];
                 const oldPrice = token.price;
-                const change = 1 + (Math.random() - 0.5) * 0.005; // ±0.5% 변동
-                token.price *= change;
+                const change = (Math.random() - 0.5) * 0.01; // ±0.5%
+                token.price *= (1 + change);
 
-                // 거래소 가격도 동기화
-                token.exchanges.forEach(ex => ex.price *= (1 + (Math.random() - 0.5) * 0.002));
+                // 0.4% 이상 변동 시 알림 발생
+                if (Math.abs(change * 100) > 0.4) showPriceAlert(symbol, change * 100);
 
                 const card = document.querySelector(`[data-symbol="${symbol}"]`);
                 if (card) {
                     card.classList.remove('price-up', 'price-down');
-                    void card.offsetWidth; // 리플로우 트리거 (애니메이션 재시작)
+                    void card.offsetWidth;
                     card.classList.add(token.price > oldPrice ? 'price-up' : 'price-down');
                 }
             });
-
             updateCount++;
             document.getElementById('update-count').innerText = updateCount;
             renderPriceCards();
         }
 
-        // 초기 실행 및 2초 간격 업데이트
         document.addEventListener('DOMContentLoaded', () => {
             renderPriceCards();
-            setInterval(simulatePriceUpdate, 2000);
+            setInterval(simulateUpdate, 2000);
         });
     </script>
 </body>
