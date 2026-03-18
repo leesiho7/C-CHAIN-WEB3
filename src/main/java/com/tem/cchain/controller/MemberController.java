@@ -54,8 +54,8 @@ public class MemberController {
 
     @GetMapping("/logout")
     public String logout(HttpSession session) {
-        session.invalidate();   
-        return "redirect:/login";
+        session.invalidate();
+        return "redirect:/main";
     }
 
     @PostMapping("/wallet/quick-deposit")
