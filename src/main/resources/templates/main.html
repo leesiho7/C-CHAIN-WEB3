@@ -57,10 +57,13 @@
                     <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">NEW</span>
                 </button>
                 
-                <div th:if="${session.loginMember == null}">
-                    <a href="/login" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" class="w-5 h-5">
-                        <span class="text-sm">지갑 연결</span>
+                <div th:if="${session.loginMember == null}" class="flex items-center gap-2">
+                    <a href="/join" class="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-50 transition">
+                        회원가입
+                    </a>
+                    <a href="/login" class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition shadow-md">
+                        <i class="fa-solid fa-right-to-bracket text-xs"></i>
+                        <span>로그인</span>
                     </a>
                 </div>
 
