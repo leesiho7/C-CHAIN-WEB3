@@ -26,7 +26,7 @@ public class TokenController {
 
     private final TokenService tokenService;
     private final MemberRepository memberRepository; 
-
+    private final WalletService walletService;
     @GetMapping("/connect")
     public String connectPage() {
         return "metamask";
@@ -107,21 +107,16 @@ public class TokenController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            Member member = memberRepository.findByWalletaddressIgnoreCase(address);
+            // 1. 블록체인 네트워크에서 직접 실시간 잔액 조회 (잔상 원천 차단)
+            double realBalance = walletService.getOmtBalance(address);
+            
+            // 2. 백그라운드에서 DB 동기화 실행 (선택사항, 필요시 최신화)
+            tokenService.syncBalanceAsync(address);
 
-            if(member != null) {
-                tokenService.syncBalanceAsync(address);
+            response.put("success", true);
+            response.put("message", "잔액 조회 성공");
+            response.put("balance", String.format("%.2f", realBalance));
 
-                response.put("success", true);
-                response.put("message", "잔액 조회 성공");
-
-                BigDecimal balance = member.getOmtBalance();
-                response.put("balance", (balance != null) ? balance.toString() : "0");
-
-            } else {
-                response.put("success", false);
-                response.put("message", "등록된 회원이 아닙니다.");
-            }
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "서버 에러: " + e.getMessage());

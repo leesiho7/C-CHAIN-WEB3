@@ -31,6 +31,9 @@ public class SyncService {
     private final IndexerStateRepository stateRepository;
     private final IndexerBatchSaver batchSaver;
 
+    @Value("${token.contract.address:none}")
+    private String omtContractAddress;
+
     private static final String SERVICE_NAME   = "OMT_MULTI_INDEXER";
     private static final int BATCH_BLOCK_SIZE  = 2000;
     /** RPC Rate Limit 방지: 배치 요청 사이 대기 시간 (ms) */
@@ -38,16 +41,20 @@ public class SyncService {
     private static final String TRANSFER_TOPIC =
             "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 
-    private static final Map<String, String> WATCH_TARGETS = Map.of(
-            "0xYourOMTContractAddress".toLowerCase(), "OMT",
-            "0x779877a7b0d9e8603169ddbd7836e478b4624789".toLowerCase(), "LINK",
-            "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238".toLowerCase(), "USDC",
-            "0xfff9976782d46cc05635d1e5f6bd092480392204".toLowerCase(), "WETH",
-            "0xe24655d049e35922f306869a19c62394c8657155".toLowerCase(), "DAI"
-    );
+    private final java.util.Map<String, String> WATCH_TARGETS = new java.util.HashMap<>();
 
     @PostConstruct
     public void init() {
+        // 인덱싱 대상 설정 (OMT는 설정값에서 가져옴)
+        if (!"none".equals(omtContractAddress)) {
+            WATCH_TARGETS.put(omtContractAddress.toLowerCase(), "OMT");
+        }
+        // 기타 고정 자산
+        WATCH_TARGETS.put("0x779877a7b0d9e8603169ddbd7836e478b4624789".toLowerCase(), "LINK");
+        WATCH_TARGETS.put("0x1c7d4b196cb0c7b01d743fbc6116a902379c7238".toLowerCase(), "USDC");
+        WATCH_TARGETS.put("0xfff9976782d46cc05635d1e5f6bd092480392204".toLowerCase(), "WETH");
+        WATCH_TARGETS.put("0xe24655d049e35922f306869a19c62394c8657155".toLowerCase(), "DAI");
+
         Web3j web3j = web3jProvider.getIfAvailable();
         if (web3j == null) {
             log.warn("[Indexer] Web3j 빈 없음 — RPC URL 미설정으로 인덱서 비활성화");
