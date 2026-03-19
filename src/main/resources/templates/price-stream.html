@@ -81,54 +81,57 @@
     <div id="alert-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3"></div>
 
     <script>
+        // Bybit 심볼 → 내부 키 매핑
+        const SYMBOL_MAP = {
+            'BTCUSDT': 'BTC',
+            'ETHUSDT': 'ETH',
+            'SOLUSDT': 'SOL'
+        };
+
         const prices = {
-            BTC: { 
-                symbol: 'BTC', name: 'Bitcoin', price: 52437.82, change24h: 3.42,
+            BTC: {
+                symbol: 'BTC', name: 'Bitcoin', price: 0, change24h: 0,
                 icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png',
                 theme: 'from-[#F7931A] to-[#FFAB40]',
-                exchanges: [{ name: 'Binance', price: 52438.50 }, { name: 'Upbit', price: 52440.10 }]
+                exchange: 'Bybit LIVE'
             },
-            ETH: { 
-                symbol: 'ETH', name: 'Ethereum', price: 1662.45, change24h: 5.67,
+            ETH: {
+                symbol: 'ETH', name: 'Ethereum', price: 0, change24h: 0,
                 icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png',
                 theme: 'from-[#627EEA] to-[#8C9EFF]',
-                exchanges: [{ name: 'Binance', price: 1662.80 }, { name: 'Coinbase', price: 1661.90 }]
+                exchange: 'Bybit LIVE'
             },
-            SOL: { 
-                symbol: 'SOL', name: 'Solana', price: 98.32, change24h: -2.15,
+            SOL: {
+                symbol: 'SOL', name: 'Solana', price: 0, change24h: 0,
                 icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/sol.png',
                 theme: 'from-[#14F195] to-[#9945FF]',
-                exchanges: [{ name: 'Binance', price: 98.35 }, { name: 'Upbit', price: 98.40 }]
+                exchange: 'Bybit LIVE'
             },
-            OMT: { 
-                symbol: 'OMT', name: 'OMT Token', price: 30.0, change24h: 12.5,
+            OMT: {
+                symbol: 'OMT', name: 'OMT Token', price: 1.0, change24h: 0,
                 icon: 'https://cdn-icons-png.flaticon.com/512/7075/7075050.png',
                 theme: 'from-blue-600 to-indigo-700',
-                exchanges: [{ name: 'C-Chain', price: 30.00 }]
+                exchange: 'C-Chain'
             }
         };
 
         let updateCount = 0;
+        let ws = null;
+        let reconnectTimer = null;
 
-        // 알림 기능 함수
         function showPriceAlert(symbol, change) {
             const container = document.getElementById('alert-container');
             const alert = document.createElement('div');
             const color = change > 0 ? 'bg-green-600' : 'bg-red-600';
-            const icon = change > 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
-
+            const icon  = change > 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
             alert.className = `${color} text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 transform translate-y-10 opacity-0 transition-all duration-500 font-bold text-xs`;
             alert.innerHTML = `
                 <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center"><i class="fa-solid ${icon}"></i></div>
-                <span>${symbol} 변동: ${change > 0 ? '+' : ''}${change.toFixed(2)}% 감지</span>
+                <span>${symbol} ${change > 0 ? '+' : ''}${change.toFixed(2)}% 변동 감지</span>
             `;
-
             container.appendChild(alert);
             setTimeout(() => alert.classList.remove('translate-y-10', 'opacity-0'), 50);
-            setTimeout(() => {
-                alert.classList.add('opacity-0', 'scale-90');
-                setTimeout(() => alert.remove(), 500);
-            }, 3000);
+            setTimeout(() => { alert.classList.add('opacity-0', 'scale-90'); setTimeout(() => alert.remove(), 500); }, 3000);
         }
 
         function renderPriceCards() {
@@ -146,77 +149,93 @@
                             </div>
                         </div>
                         <div class="mb-6 text-center py-4 bg-gray-50 rounded-2xl border border-gray-100">
-                            <p class="text-3xl font-black text-gray-900 mb-1">$${token.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
-                            <span class="text-xs font-bold ${token.change24h > 0 ? 'text-green-500' : 'text-red-500'}">
-                                ${token.change24h > 0 ? '▲' : '▼'} ${Math.abs(token.change24h).toFixed(2)}%
+                            <p class="text-3xl font-black text-gray-900 mb-1">
+                                ${token.price === 0 ? '<span class="text-gray-300 text-lg">연결 중...</span>' : '$' + token.price.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                            </p>
+                            <span class="text-xs font-bold ${token.change24h >= 0 ? 'text-green-500' : 'text-red-500'}">
+                                ${token.change24h >= 0 ? '▲' : '▼'} ${Math.abs(token.change24h).toFixed(2)}%
                             </span>
                         </div>
-                        <div class="space-y-2">
-                            ${token.exchanges.map(ex => `
-                                <div class="flex justify-between text-[11px] font-bold">
-                                    <span class="text-gray-500">${ex.name}</span>
-                                    <span class="text-gray-900">$${ex.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                                </div>
-                            `).join('')}
+                        <div class="flex justify-between text-[11px] font-bold">
+                            <span class="text-gray-500">${token.exchange}</span>
+                            <span class="text-gray-900">${token.price === 0 ? '--' : '$' + token.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                         </div>
                     </div>
                 </div>
             `).join('');
         }
 
-        // 실제 서버에서 시세 데이터를 가져오는 함수
-        async function fetchRealPrices() {
-            try {
-                const res = await fetch('/api/price/stream');
-                if (!res.ok) return;
-                const data = await res.json();
+        function connectBybitWS() {
+            if (ws) ws.close();
+            ws = new WebSocket('wss://stream.bybit.com/v5/public/spot');
 
-                // 1. 기존 데이터 백업 (변동 알림용)
-                const oldPrices = JSON.parse(JSON.stringify(prices));
+            ws.onopen = () => {
+                console.log('[Bybit WS] 연결됨');
+                ws.send(JSON.stringify({
+                    op: 'subscribe',
+                    args: ['tickers.BTCUSDT', 'tickers.ETHUSDT', 'tickers.SOLUSDT']
+                }));
+            };
 
-                // 2. 새로운 데이터 반영 (테마/아이콘/거래소 정보 유지하며 가격/변동률만 업데이트)
-                Object.keys(data).forEach(symbol => {
-                    if (prices[symbol]) {
-                        const oldPrice = prices[symbol].price;
-                        const newPrice = data[symbol].price;
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                if (!msg.topic || !msg.data) return;
 
-                        prices[symbol].price = newPrice;
-                        prices[symbol].change24h = data[symbol].change24h;
+                const bybitSymbol = msg.data.symbol;
+                const key = SYMBOL_MAP[bybitSymbol];
+                if (!key) return;
 
-                        // 알림 발생 (0.1% 이상 변동 시)
-                        const changePercent = ((newPrice - oldPrice) / oldPrice) * 100;
-                        if (Math.abs(changePercent) > 0.1) {
-                            showPriceAlert(symbol, changePercent);
-                        }
+                const newPrice   = parseFloat(msg.data.lastPrice);
+                const change24h  = parseFloat(msg.data.price24hPcnt) * 100;
+                const oldPrice   = prices[key].price;
 
-                        // 카드 애니메이션 효과 적용
-                        const card = document.querySelector(`[data-symbol="${symbol}"]`);
-                        if (card && oldPrice !== newPrice) {
-                            card.classList.remove('price-up', 'price-down');
-                            void card.offsetWidth;
-                            card.classList.add(newPrice > oldPrice ? 'price-up' : 'price-down');
-                        }
+                // 변동 알림 (이미 초기값을 받은 이후부터)
+                if (oldPrice > 0 && Math.abs(((newPrice - oldPrice) / oldPrice) * 100) > 0.05) {
+                    showPriceAlert(key, ((newPrice - oldPrice) / oldPrice) * 100);
+                }
+
+                // 카드 flash 애니메이션
+                if (oldPrice > 0 && oldPrice !== newPrice) {
+                    const card = document.querySelector(`[data-symbol="${key}"]`);
+                    if (card) {
+                        card.classList.remove('price-up', 'price-down');
+                        void card.offsetWidth;
+                        card.classList.add(newPrice > oldPrice ? 'price-up' : 'price-down');
                     }
-                });
+                }
+
+                prices[key].price    = newPrice;
+                prices[key].change24h = change24h;
 
                 updateCount++;
                 document.getElementById('update-count').innerText = updateCount;
                 renderPriceCards();
+            };
 
-            } catch (e) {
-                console.error("Price Stream Error:", e);
-            }
+            ws.onerror = (e) => console.error('[Bybit WS] 에러:', e);
+
+            ws.onclose = () => {
+                console.warn('[Bybit WS] 연결 끊김 — 3초 후 재연결');
+                reconnectTimer = setTimeout(connectBybitWS, 3000);
+            };
         }
 
-        // 2. 실행 부분을 이렇게 수정
+        async function updateTopBalance() {
+            try {
+                const res = await fetch('/api/token/balance', { method: 'POST' });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success) document.getElementById('top-balance').innerText = data.balance + ' OMT';
+                }
+            } catch(e) {}
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             renderPriceCards();
             updateTopBalance();
-            // 3초마다 실제 서버 데이터 요청
-            priceTimer = setInterval(fetchRealPrices, 3000);
+            connectBybitWS();
         });
 
-        // bfcache 복원 시 잔액 초기화 (로그아웃 후 이전 값 잔상 방지)
         window.addEventListener('pageshow', (e) => {
             if (e.persisted) {
                 document.getElementById('top-balance').innerText = '-- OMT';
@@ -224,12 +243,9 @@
             }
         });
 
-        // 3. [핵심] 페이지를 떠날 때 타이머를 즉시 종료!
         window.addEventListener('beforeunload', () => {
-            if (priceTimer) {
-                clearInterval(priceTimer);
-                console.log("실시간 스트림 종료 - 메모리 해제");
-            }
+            if (reconnectTimer) clearTimeout(reconnectTimer);
+            if (ws) ws.close();
         });
     </script>
 </body>
