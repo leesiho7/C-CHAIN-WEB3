@@ -58,12 +58,9 @@
                 </button>
                 
                 <div th:if="${session.loginMember == null}" class="flex items-center gap-2">
-                    <a href="/join" class="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-50 transition">
-                        회원가입
-                    </a>
+                    <a href="/join" class="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-50 transition">회원가입</a>
                     <a href="/login" class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition shadow-md">
-                        <i class="fa-solid fa-right-to-bracket text-xs"></i>
-                        <span>로그인</span>
+                        <i class="fa-solid fa-right-to-bracket text-xs"></i><span>로그인</span>
                     </a>
                 </div>
 
@@ -116,19 +113,6 @@
                     </div>
                 </div>
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
-                <div class="bg-gradient-to-r from-orange-500 to-orange-600 p-8 rounded-2xl text-white shadow-lg relative overflow-hidden">
-                    <i class="fa-brands fa-aws text-4xl mb-4 opacity-80"></i>
-                    <h3 class="text-2xl font-bold mb-2">AWS China (Beijing)</h3>
-                    <p class="text-orange-100 text-sm">중국 진출을 위한 고성능 클라우드 인프라 파트너</p>
-                </div>
-                <div class="bg-gradient-to-r from-blue-600 to-blue-700 p-8 rounded-2xl text-white shadow-lg relative overflow-hidden">
-                    <i class="fa-solid fa-cloud text-4xl mb-4 opacity-80"></i>
-                    <h3 class="text-2xl font-bold mb-2">Alibaba Cloud</h3>
-                    <p class="text-blue-100 text-sm">아시아 1위 플랫폼과 함께하는 비즈니스 스케일링</p>
-                </div>
-            </div>
         </div>
     </main>
 
@@ -155,32 +139,50 @@
         </div>
     </div>
 
-    <div id="addDocumentModal" class="modal"><div class="modal-content"><div class="p-6 border-b flex justify-between items-center"><h3 class="font-bold text-xl">새 문서 추가</h3><button onclick="closeAddDocumentModal()"><i class="fa-solid fa-xmark"></i></button></div> <form id="addDocumentForm" class="p-6 space-y-4"><input type="text" id="titleCn" placeholder="제목 (CN)" class="w-full p-3 border rounded-xl"><textarea id="contentCn" placeholder="내용 (CN)" rows="5" class="w-full p-3 border rounded-xl"></textarea><input type="text" id="sourceName" placeholder="출처" class="w-full p-3 border rounded-xl"><textarea id="summary" placeholder="요약 (KR)" class="w-full p-3 border rounded-xl"></textarea><button type="button" onclick="submitNewDocument()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">등록하기</button></form></div></div>
+    <div id="login-modal" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4">
+        <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onclick="closeLoginModal()"></div>
+        <div class="relative bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
+            <div class="text-center">
+                <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-user-lock text-3xl"></i>
+                </div>
+                <h3 class="text-2xl font-black text-gray-900 mb-2">로그인이 필요합니다</h3>
+                <p class="text-gray-500 mb-8 font-medium">자산 전송, 번역, 거래소 연동 등 <br> 모든 기능을 이용하려면 가입해 보세요!</p>
+                <div class="flex flex-col gap-3">
+                    <a href="/login" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-lg transition text-center">로그인하러 가기</a>
+                    <button onclick="closeLoginModal()" class="w-full py-4 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-2xl font-bold transition">나중에 할게요</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div id="tx-loader" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] hidden flex-col items-center justify-center text-white">
         <div class="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
         <p class="mt-6 font-bold tracking-widest">CHAIN SYNCING...</p>
     </div>
-<div id="login-modal" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4">
-    <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm"></div>
-    <div class="relative bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl transform transition-all">
-        <div class="text-center">
-            <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fa-solid fa-user-lock text-3xl"></i>
-            </div>
-            <h3 class="text-2xl font-black text-gray-900 mb-2">로그인이 필요합니다</h3>
-            <p class="text-gray-500 mb-8 font-medium">자산 전송, 번역, 거래소 연동 등 <br> 모든 기능을 이용하려면 가입해 보세요!</p>
-            
-            <div class="flex flex-col gap-3">
-                <a href="/login" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-lg transition">로그인하러 가기</a>
-                <button onclick="closeLoginModal()" class="w-full py-4 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-2xl font-bold transition">나중에 할게요</button>
-            </div>
-        </div>
-    </div>
-</div>
-    <script>
-        let currentDocId = null;
 
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        
+        let currentDocId = null;
+        // 빨간 줄 해결: 서버 로그인 상태를 안전하게 JS 변수에 할당
+        const isLoggedIn = /*[[${session.loginMember != null}]]*/ false;
+
+        // 권한 체크 공통 함수
+        function checkAuth(event, callback) {
+            if (event && event.stopPropagation) event.stopPropagation();
+            if (!isLoggedIn) {
+                document.getElementById('login-modal').classList.remove('hidden');
+                return;
+            }
+            if (typeof callback === 'function') callback();
+        }
+
+        function closeLoginModal() {
+            document.getElementById('login-modal').classList.add('hidden');
+        }
+
+        // 워크스페이스 열기
         function openWorkspace(el) {
             currentDocId = el.dataset.id;
             document.getElementById('ws-title').innerText = el.dataset.title;
@@ -191,10 +193,12 @@
             const submitBtn = document.getElementById('submit-btn');
 
             if (el.dataset.status === 'COMPLETED') {
-                inputArea.readOnly = true; submitBtn.classList.add('hidden');
+                inputArea.readOnly = true; 
+                submitBtn.classList.add('hidden');
                 inputArea.value = "이 문서는 이미 검증 완료되었습니다.";
             } else {
-                inputArea.readOnly = false; submitBtn.classList.remove('hidden');
+                inputArea.readOnly = false; 
+                submitBtn.classList.remove('hidden');
                 inputArea.value = "";
             }
 
@@ -209,6 +213,20 @@
             setTimeout(() => document.getElementById('overlay').classList.add('hidden'), 300);
         }
 
+        // 실시간 잔액 조회 (오류 해결 반영: WalletService 호출 가정)
+        async function updateBalance() {
+            if (!isLoggedIn) return;
+            try {
+                // 비동기 DB 대기 이슈를 해결하기 위해 직접 잔액 조회 API 호출
+                const res = await fetch('/api/token/balance', { method: 'POST' });
+                if(res.ok) {
+                    const data = await res.json();
+                    document.getElementById('top-balance').innerText = data.balance;
+                }
+            } catch(e) { console.error("Balance Sync Error", e); }
+        }
+
+        // 번역 제출 (트랜잭션 시뮬레이션 로더 포함)
         async function submitWork() {
             const content = document.getElementById('translation-input').value;
             if(!content) return alert("번역본을 입력하세요.");
@@ -221,64 +239,20 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ documentId: currentDocId, contentKr: content })
                 });
-                if(res.ok) { alert("제출 완료!"); location.reload(); }
-            } catch(e) { alert("오류 발생"); }
+                if(res.ok) { 
+                    alert("제출 완료 및 OMT 보상이 지급되었습니다!"); 
+                    location.reload(); 
+                }
+            } catch(e) { alert("통신 오류가 발생했습니다."); }
             finally { document.getElementById('tx-loader').classList.add('hidden'); }
         }
 
-        async function submitNewDocument() {
-            const payload = {
-                titleCn: document.getElementById('titleCn').value,
-                contentCn: document.getElementById('contentCn').value,
-                sourceName: document.getElementById('sourceName').value,
-                summary: document.getElementById('summary').value
-            };
-            const res = await fetch('/api/document/add', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if(res.ok) location.reload(); else alert("추가 실패");
-        }
-
-        async function deleteDocument(id) {
-            if(confirm('삭제하시겠습니까?')) {
-                const res = await fetch(`/api/document/delete/${id}`, { method: 'DELETE' });
-                if(res.ok) location.reload();
-            }
-        }
-
-        async function updateBalance() {
-            try {
-                const res = await fetch('/api/token/balance', { method: 'POST' });
-                if(res.ok) {
-                    const data = await res.json();
-                    document.getElementById('top-balance').innerText = data.balance;
-                }
-            } catch(e) {}
-        }
-
-        function openAddDocumentModal() { document.getElementById('addDocumentModal').classList.add('active'); }
-        function closeAddDocumentModal() { document.getElementById('addDocumentModal').classList.remove('active'); }
         function logoutAll() { location.href = '/logout'; }
+        
+        // 초기화
         window.onload = updateBalance;
-        // Thymeleaf 세션과 연동: 로그인 시 true, 비로그인 시 false
-        const isLoggedIn = [[${session.loginMember != null}]];
-
-        // 로그인 필요 액션에 사용하는 공통 인증 체크
-        // checkAuth(event, callback) — 로그인 상태면 callback 실행, 아니면 모달 표시
-        function checkAuth(event, callback) {
-            if (event && event.stopPropagation) event.stopPropagation();
-            if (!isLoggedIn) {
-                document.getElementById('login-modal').classList.remove('hidden');
-                return;
-            }
-            if (typeof callback === 'function') callback();
-        }
-
-        function closeLoginModal() {
-            document.getElementById('login-modal').classList.add('hidden');
-        }
+        
+        /*]]>*/
     </script>
 </body>
 </html>
