@@ -90,7 +90,7 @@ public class TokenController {
 
         // DB 업데이트를 위해 리포지토리에서 실제 영속화된 객체를 가져오는 것을 권장
         try {
-            Member member = memberRepository.findById(loginMember.getId()).orElse(loginMember);
+            Member member = memberRepository.findById(loginMember.getEmail()).orElse(loginMember);
             member.setWalletaddress(metaMaskAddress);
             memberRepository.save(member);
 
