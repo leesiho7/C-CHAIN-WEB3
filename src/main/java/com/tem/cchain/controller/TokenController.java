@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.tem.cchain.entity.Member;
 import com.tem.cchain.repository.MemberRepository;
 import com.tem.cchain.service.TokenService;
+import com.tem.cchain.service.WalletService; // WalletService 임포트 확인
 
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,8 @@ public class TokenController {
 
     private final TokenService tokenService;
     private final MemberRepository memberRepository; 
-    private final WalletService walletService;
+    private final WalletService walletService; // 인스턴스 메서드를 사용한다면 주입 유지
+
     @GetMapping("/connect")
     public String connectPage() {
         return "metamask";
@@ -47,11 +49,12 @@ public class TokenController {
 
         try {
             Member member = memberRepository.findByWalletaddressIgnoreCase(userAddress);
+            // 비동기로 잔액 동기화 시도
             tokenService.syncBalanceAsync(userAddress);
             
             model.addAttribute("userAddress", userAddress);
             
-            // [방어 코드] 잔액이 null이면 0으로 표시
+            // [방어 코드] DB 정보가 없거나 잔액이 null이면 0으로 표시
             BigDecimal displayBalance = (member != null && member.getOmtBalance() != null) 
                                         ? member.getOmtBalance() 
                                         : BigDecimal.ZERO;
@@ -85,32 +88,38 @@ public class TokenController {
             return response;
         }
 
-        // DB의 walletaddress를 MetaMask 주소로 업데이트
-        loginMember.setWalletaddress(metaMaskAddress);
-        memberRepository.save(loginMember);
+        // DB 업데이트를 위해 리포지토리에서 실제 영속화된 객체를 가져오는 것을 권장
+        try {
+            Member member = memberRepository.findById(loginMember.getId()).orElse(loginMember);
+            member.setWalletaddress(metaMaskAddress);
+            memberRepository.save(member);
 
-        // 세션도 최신 상태로 갱신
-        session.setAttribute("loginMember", loginMember);
-        session.setAttribute("userAddress", metaMaskAddress);
+            // 세션 최신화
+            session.setAttribute("loginMember", member);
+            session.setAttribute("userAddress", metaMaskAddress);
 
-        tokenService.syncBalanceAsync(metaMaskAddress);
+            tokenService.syncBalanceAsync(metaMaskAddress);
 
-        response.put("success", true);
-        response.put("message", "지갑 연결 성공");
+            response.put("success", true);
+            response.put("message", "지갑 연결 성공");
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "DB 저장 중 오류: " + e.getMessage());
+        }
+        
         return response;
     }
 
     @PostMapping("/api/token/balance")
     @ResponseBody
-    public Map<String, Object> getBalanceApi(@RequestBody Map<String, String> payload, HttpSession session) {
-        String address = payload.get("walletAddress");
+    public Map<String, Object> getBalanceApi(HttpSession session) {
+        String address = (String) session.getAttribute("userAddress");
         Map<String, Object> response = new HashMap<>();
 
         try {
-            // 1. 블록체인 네트워크에서 직접 실시간 잔액 조회 (잔상 원천 차단)
             double realBalance = walletService.getOmtBalance(address);
             
-            // 2. 백그라운드에서 DB 동기화 실행 (선택사항, 필요시 최신화)
+            // 백그라운드에서 DB 동기화 실행
             tokenService.syncBalanceAsync(address);
 
             response.put("success", true);
@@ -119,7 +128,7 @@ public class TokenController {
 
         } catch (Exception e) {
             response.put("success", false);
-            response.put("message", "서버 에러: " + e.getMessage());
+            response.put("message", "조회 실패: " + e.getMessage());
         }
         return response;
     }

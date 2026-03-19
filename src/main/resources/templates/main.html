@@ -66,6 +66,10 @@
 
                 <div th:if="${session.loginMember != null}" class="flex items-center gap-2">
                     <button onclick="location.href='/mypage'" class="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-black transition">마이페이지</button>
+                    <button onclick="location.href='/connect'" class="flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-200 text-orange-600 rounded-lg text-sm font-bold hover:bg-orange-100 transition">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" class="w-4 h-4">
+                        <span th:text="${session.userAddress != null} ? '지갑 연결됨' : '지갑 연결'">지갑 연결</span>
+                    </button>
                     <button onclick="logoutAll()" class="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 transition">로그아웃</button>
                     <button th:if="${session.loginMember.email == 'admin@cchain.com'}" onclick="location.href='/admin'" class="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-bold border border-red-100 flex items-center gap-1">
                         <i class="fa-solid fa-lock-open"></i> 관리자
