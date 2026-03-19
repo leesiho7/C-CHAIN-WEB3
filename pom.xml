@@ -83,15 +83,10 @@
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- Flyway core + PostgreSQL support for VectorDB migrations -->
+		<!-- Flyway (Spring Boot 3.2.x → Flyway 9.x 내장, PostgreSQL 지원 포함) -->
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-core</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.flywaydb</groupId>
-			<artifactId>flyway-database-postgresql</artifactId>
-			<version>10.10.0</version>
 		</dependency>
 	</dependencies>
 
