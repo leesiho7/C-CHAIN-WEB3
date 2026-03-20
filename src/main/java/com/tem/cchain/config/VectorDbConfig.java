@@ -1,6 +1,7 @@
 package com.tem.cchain.config;
 
 import org.flywaydb.core.Flyway;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -48,18 +49,21 @@ public class VectorDbConfig {
     }
 
     /**
-     * Explicit Flyway bean that uses vectorDataSource ONLY.
-     * This ensures Flyway runs migrations on PostgreSQL, not the default datasource.
+     * PostgreSQL 전용 Flyway 빈.
+     * @Qualifier로 vectorDataSource를 명시하여 @Primary MySQL DataSource 주입 방지.
+     * .migrate()를 직접 호출 — spring.flyway.enabled=false이므로 자동 실행이 없음.
      */
     @Bean
-    public Flyway flyway(DataSource vectorDataSource) {
-        return Flyway.configure()
+    public Flyway flyway(@Qualifier("vectorDataSource") DataSource vectorDataSource) {
+        Flyway flyway = Flyway.configure()
                 .dataSource(vectorDataSource)
                 .locations("classpath:db/migration")
                 .baselineOnMigrate(true)
                 .outOfOrder(true)
                 .repairOnMigrate(true)
                 .load();
+        flyway.migrate();
+        return flyway;
     }
 
     @Bean
