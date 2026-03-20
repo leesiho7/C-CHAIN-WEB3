@@ -60,6 +60,12 @@
             <version>4.10.0</version>
        </dependency>
 
+		<!-- Spring Security — CSRF/CORS/인증 필터 체인 관리 -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
