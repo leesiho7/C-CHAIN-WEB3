@@ -38,7 +38,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
-@DependsOn("dataSource")
+@DependsOn({"dataSource", "mysqlEntityManagerFactory"})
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
