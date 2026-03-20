@@ -2,6 +2,7 @@ package com.tem.cchain.config;
 
 import com.zaxxer.hikari.HikariDataSource;
 import jakarta.persistence.EntityManagerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -30,6 +31,7 @@ import java.util.Properties;
  * @Lazy(false): spring.main.lazy-initialization=true 환경에서도
  *              MySQL 빈들이 앱 시작 시 즉시 생성되어 dialect가 확정됨.
  */
+@Slf4j
 @Configuration
 @EnableJpaRepositories(
         basePackages = "com.tem.cchain.repository",
@@ -65,6 +67,9 @@ public class MySqlDataSourceConfig {
     @Lazy(false)
     @Bean("dataSource")
     public DataSource dataSource() {
+        // Railway 로그에서 실제 연결 DB 확인용 — 민감정보(password) 제외
+        log.info("[MySQL] 연결 URL: {}", url);
+        log.info("[MySQL] 연결 USER: {}", username);
         HikariDataSource ds = new HikariDataSource();
         ds.setJdbcUrl(url);
         ds.setUsername(username);
@@ -98,6 +103,17 @@ public class MySqlDataSourceConfig {
         Properties props = new Properties();
         props.put("hibernate.dialect",               "org.hibernate.dialect.MySQLDialect");
         props.put("hibernate.hbm2ddl.auto",          "update");
+        // ── 네이밍 전략: Spring Boot auto-config와 동일하게 명시 ─────────────────
+        // 미설정 시 Hibernate 6.x 기본값(CamelCaseToUnderscoresNamingStrategy)이 적용되어
+        // 기존 Spring Boot가 생성한 테이블명/컬럼명과 불일치할 수 있음.
+        props.put("hibernate.physical_naming_strategy",
+                  "org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy");
+        props.put("hibernate.implicit_naming_strategy",
+                  "org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy");
+        // ── SQL 로그 (Railway 로그에서 실제 쿼리 확인용) ─────────────────────────
+        props.put("hibernate.show_sql",              "true");
+        props.put("hibernate.format_sql",            "false");
+        // ── 배치 최적화 ──────────────────────────────────────────────────────────
         props.put("hibernate.jdbc.batch_size",       "50");
         props.put("hibernate.order_inserts",         "true");
         props.put("hibernate.order_updates",         "true");
