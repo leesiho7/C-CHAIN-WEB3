@@ -79,11 +79,10 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- PostgreSQL 드라이버 (VectorDB용) -->
+		<!-- PostgreSQL 드라이버 (VectorDB용) — compile 스코프: PGobject 등 컴파일 시점 필요 -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
-			<scope>runtime</scope>
 		</dependency>
 
 		<!-- Flyway 10 — flyway-database-postgresql은 10.x부터 별도 모듈 -->
