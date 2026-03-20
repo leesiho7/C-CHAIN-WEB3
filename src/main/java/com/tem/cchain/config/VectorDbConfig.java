@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
@@ -50,10 +51,12 @@ public class VectorDbConfig {
 
     /**
      * PostgreSQL 전용 Flyway 빈.
-     * @Qualifier로 vectorDataSource를 명시하여 @Primary MySQL DataSource 주입 방지.
-     * .migrate()를 직접 호출 — spring.flyway.enabled=false이므로 자동 실행이 없음.
+     * @Lazy(false): spring.main.lazy-initialization=true 환경에서도 앱 시작 시 즉시 생성,
+     *              migrate()가 반드시 실행되어 trading_knowledge 테이블이 생성됨.
+     * @Qualifier: @Primary MySQL DataSource 대신 vectorDataSource를 명시 주입.
      */
     @Bean
+    @Lazy(false)
     public Flyway flyway(@Qualifier("vectorDataSource") DataSource vectorDataSource) {
         Flyway flyway = Flyway.configure()
                 .dataSource(vectorDataSource)
