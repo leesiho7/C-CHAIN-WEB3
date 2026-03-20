@@ -1,9 +1,9 @@
 package com.tem.cchain.config;
 
+import com.zaxxer.hikari.HikariDataSource;
 import jakarta.persistence.EntityManagerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -19,11 +19,9 @@ import java.util.Properties;
 /**
  * MySQL을 Primary DataSource로 명시 설정.
  *
- * 배경: VectorDbConfig가 PostgreSQL용 DataSource 빈을 등록하면
- * Spring Boot의 DataSourceAutoConfiguration이 @ConditionalOnMissingBean으로 백오프하여
- * MySQL DataSource가 생성되지 않고 JPA가 PostgreSQL에 연결하는 문제가 발생.
- * 이 클래스가 @Primary MySQL DataSource + EntityManagerFactory + TransactionManager를
- * 명시적으로 등록하여 JPA가 항상 MySQL을 사용하도록 보장한다.
+ * @ConfigurationProperties + @Bean 조합은 Spring Boot 3.2.x에서
+ * BeanPostProcessor 처리 중 @Primary 플래그가 손실될 수 있으므로
+ * @Value 직접 주입 방식으로 DataSource를 구성한다.
  */
 @Configuration
 @EnableJpaRepositories(
@@ -33,20 +31,37 @@ import java.util.Properties;
 )
 public class MySqlDataSourceConfig {
 
+    @Value("${spring.datasource.url}")
+    private String url;
+
+    @Value("${spring.datasource.username}")
+    private String username;
+
+    @Value("${spring.datasource.password}")
+    private String password;
+
+    @Value("${spring.datasource.driver-class-name:com.mysql.cj.jdbc.Driver}")
+    private String driverClassName;
+
     /**
-     * MySQL DataSource — application.properties의 spring.datasource.* 바인딩.
-     * @Primary로 설정하여 JPA auto-config 및 다른 빈들이 기본으로 이 DataSource를 사용.
+     * MySQL DataSource — @Primary 명시로 Spring이 항상 이 DataSource를 기본으로 사용.
+     * HikariDataSource 직접 생성: @ConfigurationProperties 방식 불사용
+     * (Spring Boot 3.2.x 에서 @Primary 손실 방지).
      */
     @Primary
     @Bean("dataSource")
-    @ConfigurationProperties(prefix = "spring.datasource")
     public DataSource dataSource() {
-        return DataSourceBuilder.create().build();
+        HikariDataSource ds = new HikariDataSource();
+        ds.setJdbcUrl(url);
+        ds.setUsername(username);
+        ds.setPassword(password);
+        ds.setDriverClassName(driverClassName);
+        return ds;
     }
 
     /**
      * MySQL 전용 EntityManagerFactory.
-     * com.tem.cchain.entity 패키지만 스캔 → PostgreSQL에는 JPA 엔티티 없음.
+     * com.tem.cchain.entity 패키지만 스캔 — PostgreSQL에는 JPA 엔티티 없음.
      */
     @Primary
     @Bean("mysqlEntityManagerFactory")
@@ -62,14 +77,14 @@ public class MySqlDataSourceConfig {
         em.setJpaVendorAdapter(adapter);
 
         Properties props = new Properties();
-        props.put("hibernate.dialect",                        "org.hibernate.dialect.MySQLDialect");
-        props.put("hibernate.hbm2ddl.auto",                   "update");
-        props.put("hibernate.show_sql",                       "false");
-        props.put("hibernate.format_sql",                     "false");
-        props.put("hibernate.jdbc.batch_size",                "50");
-        props.put("hibernate.order_inserts",                  "true");
-        props.put("hibernate.order_updates",                  "true");
-        props.put("hibernate.jdbc.batch_versioned_data",      "true");
+        props.put("hibernate.dialect",                    "org.hibernate.dialect.MySQLDialect");
+        props.put("hibernate.hbm2ddl.auto",               "update");
+        props.put("hibernate.show_sql",                   "false");
+        props.put("hibernate.format_sql",                 "false");
+        props.put("hibernate.jdbc.batch_size",            "50");
+        props.put("hibernate.order_inserts",              "true");
+        props.put("hibernate.order_updates",              "true");
+        props.put("hibernate.jdbc.batch_versioned_data",  "true");
         em.setJpaProperties(props);
 
         return em;
