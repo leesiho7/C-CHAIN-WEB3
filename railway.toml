@@ -1,0 +1,8 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "./mvnw package -DskipTests -q"
+
+[deploy]
+startCommand = "java -XX:+UseSerialGC -XX:MaxRAMPercentage=70.0 -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=64m -Djava.security.egd=file:/dev/./urandom -jar target/cchain-0.1.jar"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
