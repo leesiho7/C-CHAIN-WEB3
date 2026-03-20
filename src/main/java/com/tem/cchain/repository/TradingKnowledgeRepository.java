@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Repository
-@ConditionalOnProperty(name = "PGHOST")
+@ConditionalOnProperty(name = "VECTORDB_HOST")
 public class TradingKnowledgeRepository {
 
     @Autowired
