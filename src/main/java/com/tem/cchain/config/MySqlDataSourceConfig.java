@@ -107,7 +107,7 @@ public class MySqlDataSourceConfig {
         // 미설정 시 Hibernate 6.x 기본값(CamelCaseToUnderscoresNamingStrategy)이 적용되어
         // 기존 Spring Boot가 생성한 테이블명/컬럼명과 불일치할 수 있음.
         props.put("hibernate.physical_naming_strategy",
-                  "org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy");
+                  "org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy");
         props.put("hibernate.implicit_naming_strategy",
                   "org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy");
         // ── SQL 로그 (Railway 로그에서 실제 쿼리 확인용) ─────────────────────────
