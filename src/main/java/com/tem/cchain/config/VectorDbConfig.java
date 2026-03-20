@@ -10,22 +10,22 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import javax.sql.DataSource;
 
 @Configuration
-@ConditionalOnProperty(name = "PGHOST", matchIfMissing = false)
+@ConditionalOnProperty(name = "VECTORDB_HOST", matchIfMissing = false)
 public class VectorDbConfig {
 
-    @Value("${PGHOST}")
+    @Value("${VECTORDB_HOST}")
     private String host;
 
-    @Value("${PGPORT:5432}")
+    @Value("${VECTORDB_PORT:5432}")
     private String port;
 
-    @Value("${PGDATABASE}")
+    @Value("${VECTORDB_DATABASE}")
     private String database;
 
-    @Value("${PGUSER}")
+    @Value("${VECTORDB_USER}")
     private String user;
 
-    @Value("${PGPASSWORD}")
+    @Value("${VECTORDB_PASSWORD}")
     private String password;
 
     @Bean
