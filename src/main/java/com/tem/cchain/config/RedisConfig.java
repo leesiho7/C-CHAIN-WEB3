@@ -3,9 +3,11 @@ package com.tem.cchain.config;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.redisson.config.SingleServerConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -21,29 +23,29 @@ public class RedisConfig {
     @Value("${spring.data.redis.password:}")
     private String redisPassword;
 
+    /**
+     * @Lazy(false): spring.main.lazy-initialization=true 환경에서도 앱 시작 시 즉시 연결.
+     * null 반환 제거: Spring 빈이 null이면 주입받는 쪽에서 NullPointerException 발생.
+     * useSingleServer() 단일 체인: 두 번 호출하면 두 번째 호출이 첫 번째 설정을 참조 못할 수 있음.
+     */
+    @Lazy(false)
     @Bean(destroyMethod = "shutdown")
     public RedissonClient redissonClient() {
-        try {
-            Config config = new Config();
-            String address = "redis://" + redisHost + ":" + redisPort;
-            
-            config.useSingleServer()
-                  .setAddress(address)
-                  .setConnectionMinimumIdleSize(1)
-                  .setConnectTimeout(3000) // 연결 타임아웃 3초
-                  .setRetryAttempts(1);    // 재시도 1번만
+        Config config = new Config();
 
-            if (redisPassword != null && !redisPassword.isEmpty()) {
-                config.useSingleServer().setPassword(redisPassword);
-            }
+        SingleServerConfig server = config.useSingleServer()
+                .setAddress("redis://" + redisHost + ":" + redisPort)
+                .setConnectionMinimumIdleSize(1)
+                .setConnectionPoolSize(4)
+                .setConnectTimeout(5000)
+                .setRetryAttempts(3)
+                .setRetryInterval(1500);
 
-            RedissonClient client = Redisson.create(config);
-            log.info("✅ Redis 연결 성공: {}:{}", redisHost, redisPort);
-            return client;
-        } catch (Exception e) {
-            log.warn("⚠️ Redis 연결 실패 (로컬 개발 환경일 수 있음): {}", e.getMessage());
-            // 빈을 생성하되, 실제 동작 시에는 에러가 날 수 있음을 인지
-            return null; 
+        if (redisPassword != null && !redisPassword.isEmpty()) {
+            server.setPassword(redisPassword);
         }
+
+        log.info("Redis 연결 시도: {}:{}", redisHost, redisPort);
+        return Redisson.create(config);
     }
 }
