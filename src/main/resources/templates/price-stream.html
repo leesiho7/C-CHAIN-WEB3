@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>C-Chain | 실시간 가격 스트림</title>
+    <title>C-Chain | 실시간 분석 터미널</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+
     <style>
         * { font-family: 'Pretendard', sans-serif; }
         body {
@@ -23,6 +26,9 @@
             0%, 100% { background-color: white; }
             50% { background-color: rgba(239, 68, 68, 0.1); }
         }
+        /* 스크롤바 숨기기 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body>
@@ -30,15 +36,15 @@
         <div class="flex justify-between items-center">
             <div class="flex items-center space-x-6">
                 <a href="/main" class="flex items-center space-x-2 text-blue-600">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 105.656-5.656l-1.1 1.1"></path></svg>
                     <span class="text-2xl font-bold">C-Chain</span>
                 </a>
                 <span class="text-gray-400">|</span>
                 <nav class="flex items-center gap-4">
-                    <a href="/main"          class="px-4 py-2 rounded-lg text-sm transition text-gray-600 hover:bg-gray-50 font-semibold">대시보드</a>
-                    <a href="/indexer"       class="px-4 py-2 rounded-lg text-sm transition text-gray-600 hover:bg-gray-50 font-semibold">트랜잭션 인덱서</a>
-                    <a href="/exchange"      class="px-4 py-2 rounded-lg text-sm transition text-gray-600 hover:bg-gray-50 font-semibold">지갑 &amp; 거래소</a>
-                    <a href="/price"         class="px-4 py-2 rounded-lg text-sm transition bg-blue-50 text-blue-600 font-semibold">실시간 가격</a>
+                    <a href="/main" class="px-4 py-2 rounded-lg text-sm transition text-gray-600 hover:bg-gray-50 font-semibold">대시보드</a>
+                    <a href="/indexer" class="px-4 py-2 rounded-lg text-sm transition text-gray-600 hover:bg-gray-50 font-semibold">트랜잭션 인덱서</a>
+                    <a href="/exchange" class="px-4 py-2 rounded-lg text-sm transition text-gray-600 hover:bg-gray-50 font-semibold">지갑 &amp; 거래소</a>
+                    <a href="/price" class="px-4 py-2 rounded-lg text-sm transition bg-blue-50 text-blue-600 font-semibold">실시간 가격</a>
                     <a href="/wallet-server" class="px-4 py-2 rounded-lg text-sm transition text-gray-600 hover:bg-gray-50 font-semibold">지갑 서버</a>
                 </nav>
             </div>
@@ -75,65 +81,129 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="price-cards"></div>
+
+            <div class="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 h-[550px] flex flex-col">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-blue-600"></i> 실시간 기술적 분석 (BTC/USDT)
+                    </h3>
+                    <div id="tradingview_widget" class="flex-1 rounded-2xl overflow-hidden border border-gray-50"></div>
+                </div>
+
+                <div class="bg-slate-900 rounded-3xl p-6 shadow-xl text-white flex flex-col h-[550px]">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-blue-500/20">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold">Quant AI Agent</h3>
+                            <p class="text-[10px] text-blue-300 uppercase tracking-widest font-bold">Strategy: Fibonacci & Linear</p>
+                        </div>
+                    </div>
+                    
+                    <div id="ai-chat-history" class="flex-1 overflow-y-auto text-sm space-y-4 mb-4 pr-2 no-scrollbar">
+                        <div class="flex gap-2">
+                            <div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] shrink-0">AI</div>
+                            <p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none leading-relaxed text-gray-200">
+                                안녕하세요! 현재 비트코인의 피보나치 수치와 선형 회귀 채널을 분석 중입니다. <br><br>
+                                <span class="text-blue-400 font-bold">"비트코인 0.618 반등 가능성 분석해줘"</span>라고 입력해보세요.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <input type="text" id="ai-input" placeholder="분석 질문을 입력하세요..." 
+                               class="w-full bg-slate-800 border-none rounded-xl py-4 px-4 text-sm focus:ring-2 focus:ring-blue-500 text-white placeholder:text-gray-500">
+                        <button onclick="askAI()" class="absolute right-2 top-2 w-10 h-10 text-blue-500 hover:text-blue-400 transition-colors">
+                            <i class="fa-solid fa-paper-plane text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
     <div id="alert-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3"></div>
 
     <script>
-        // Bybit 심볼 → 내부 키 매핑
-        const SYMBOL_MAP = {
-            'BTCUSDT': 'BTC',
-            'ETHUSDT': 'ETH',
-            'SOLUSDT': 'SOL'
-        };
-
+        // Bybit 심볼 매핑
+        const SYMBOL_MAP = { 'BTCUSDT': 'BTC', 'ETHUSDT': 'ETH', 'SOLUSDT': 'SOL' };
         const prices = {
-            BTC: {
-                symbol: 'BTC', name: 'Bitcoin', price: 0, change24h: 0,
-                icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png',
-                theme: 'from-[#F7931A] to-[#FFAB40]',
-                exchange: 'Bybit LIVE'
-            },
-            ETH: {
-                symbol: 'ETH', name: 'Ethereum', price: 0, change24h: 0,
-                icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png',
-                theme: 'from-[#627EEA] to-[#8C9EFF]',
-                exchange: 'Bybit LIVE'
-            },
-            SOL: {
-                symbol: 'SOL', name: 'Solana', price: 0, change24h: 0,
-                icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/sol.png',
-                theme: 'from-[#14F195] to-[#9945FF]',
-                exchange: 'Bybit LIVE'
-            },
-            OMT: {
-                symbol: 'OMT', name: 'OMT Token', price: 1.0, change24h: 0,
-                icon: 'https://cdn-icons-png.flaticon.com/512/7075/7075050.png',
-                theme: 'from-blue-600 to-indigo-700',
-                exchange: 'C-Chain'
-            }
+            BTC: { symbol: 'BTC', name: 'Bitcoin', price: 0, change24h: 0, icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png', theme: 'from-[#F7931A] to-[#FFAB40]', exchange: 'Bybit LIVE' },
+            ETH: { symbol: 'ETH', name: 'Ethereum', price: 0, change24h: 0, icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png', theme: 'from-[#627EEA] to-[#8C9EFF]', exchange: 'Bybit LIVE' },
+            SOL: { symbol: 'SOL', name: 'Solana', price: 0, change24h: 0, icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/sol.png', theme: 'from-[#14F195] to-[#9945FF]', exchange: 'Bybit LIVE' },
+            OMT: { symbol: 'OMT', name: 'OMT Token', price: 1.0, change24h: 0, icon: 'https://cdn-icons-png.flaticon.com/512/7075/7075050.png', theme: 'from-blue-600 to-indigo-700', exchange: 'C-Chain' }
         };
 
         let updateCount = 0;
         let ws = null;
         let reconnectTimer = null;
 
+        // 트레이딩뷰 초기화
+        function initTradingView() {
+            new TradingView.widget({
+                "container_id": "tradingview_widget",
+                "autosize": true,
+                "symbol": "BYBIT:BTCUSDT",
+                "interval": "60",
+                "timezone": "Asia/Seoul",
+                "theme": "light",
+                "style": "1",
+                "locale": "ko",
+                "toolbar_bg": "#f1f3f6",
+                "enable_publishing": false,
+                "hide_side_toolbar": false,
+                "allow_symbol_change": true,
+                "studies": ["MAExp@tv-basicstudies", "RSI@tv-basicstudies"]
+            });
+        }
+
+        // AI 시뮬레이션 응답
+        function askAI() {
+            const input = document.getElementById('ai-input');
+            const history = document.getElementById('ai-chat-history');
+            if (!input.value.trim()) return;
+
+            // 사용자 메시지
+            const userDiv = document.createElement('div');
+            userDiv.className = 'flex justify-end';
+            userDiv.innerHTML = `<p class="bg-blue-600 p-3 rounded-2xl rounded-tr-none max-w-[80%] text-sm">${input.value}</p>`;
+            history.appendChild(userDiv);
+            
+            const userText = input.value;
+            input.value = '';
+            history.scrollTop = history.scrollHeight;
+
+            // AI 메시지 (시뮬레이션)
+            setTimeout(() => {
+                const aiDiv = document.createElement('div');
+                aiDiv.className = 'flex gap-2 animate-pulse';
+                aiDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px]">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm text-gray-400 italic">퀀트 알고리즘 연산 중...</p>`;
+                history.appendChild(aiDiv);
+                history.scrollTop = history.scrollHeight;
+
+                setTimeout(() => {
+                    aiDiv.classList.remove('animate-pulse');
+                    aiDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px]">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm leading-relaxed">"${userText}"에 대한 분석 결과: 현재 BTC는 피보나치 0.618 되돌림 구간($${prices.BTC.price.toLocaleString()})에서 강력한 지지를 받고 있습니다. 회귀 채널 하단과 겹치는 구간으로 단기 반등 확률이 높습니다.</p>`;
+                    history.scrollTop = history.scrollHeight;
+                }, 1500);
+            }, 500);
+        }
+
+        // 가격 알림
         function showPriceAlert(symbol, change) {
             const container = document.getElementById('alert-container');
             const alert = document.createElement('div');
             const color = change > 0 ? 'bg-green-600' : 'bg-red-600';
             const icon  = change > 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
             alert.className = `${color} text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 transform translate-y-10 opacity-0 transition-all duration-500 font-bold text-xs`;
-            alert.innerHTML = `
-                <div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center"><i class="fa-solid ${icon}"></i></div>
-                <span>${symbol} ${change > 0 ? '+' : ''}${change.toFixed(2)}% 변동 감지</span>
-            `;
+            alert.innerHTML = `<div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center"><i class="fa-solid ${icon}"></i></div><span>${symbol} ${change > 0 ? '+' : ''}${change.toFixed(2)}% 변동 감지</span>`;
             container.appendChild(alert);
             setTimeout(() => alert.classList.remove('translate-y-10', 'opacity-0'), 50);
             setTimeout(() => { alert.classList.add('opacity-0', 'scale-90'); setTimeout(() => alert.remove(), 500); }, 3000);
         }
 
+        // 카드 렌더링
         function renderPriceCards() {
             const container = document.getElementById('price-cards');
             container.innerHTML = Object.values(prices).map(token => `
@@ -156,45 +226,29 @@
                                 ${token.change24h >= 0 ? '▲' : '▼'} ${Math.abs(token.change24h).toFixed(2)}%
                             </span>
                         </div>
-                        <div class="flex justify-between text-[11px] font-bold">
-                            <span class="text-gray-500">${token.exchange}</span>
-                            <span class="text-gray-900">${token.price === 0 ? '--' : '$' + token.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                        </div>
                     </div>
                 </div>
             `).join('');
         }
 
+        // WebSocket 연결
         function connectBybitWS() {
             if (ws) ws.close();
             ws = new WebSocket('wss://stream.bybit.com/v5/public/spot');
-
             ws.onopen = () => {
-                console.log('[Bybit WS] 연결됨');
-                ws.send(JSON.stringify({
-                    op: 'subscribe',
-                    args: ['tickers.BTCUSDT', 'tickers.ETHUSDT', 'tickers.SOLUSDT']
-                }));
+                ws.send(JSON.stringify({ op: 'subscribe', args: ['tickers.BTCUSDT', 'tickers.ETHUSDT', 'tickers.SOLUSDT'] }));
             };
-
             ws.onmessage = (event) => {
                 const msg = JSON.parse(event.data);
                 if (!msg.topic || !msg.data) return;
-
-                const bybitSymbol = msg.data.symbol;
-                const key = SYMBOL_MAP[bybitSymbol];
+                const key = SYMBOL_MAP[msg.data.symbol];
                 if (!key) return;
 
                 const newPrice   = parseFloat(msg.data.lastPrice);
                 const change24h  = parseFloat(msg.data.price24hPcnt) * 100;
                 const oldPrice   = prices[key].price;
 
-                // 변동 알림 (이미 초기값을 받은 이후부터)
-                if (oldPrice > 0 && Math.abs(((newPrice - oldPrice) / oldPrice) * 100) > 0.05) {
-                    showPriceAlert(key, ((newPrice - oldPrice) / oldPrice) * 100);
-                }
-
-                // 카드 flash 애니메이션
+                if (oldPrice > 0 && Math.abs(((newPrice - oldPrice) / oldPrice) * 100) > 0.05) showPriceAlert(key, ((newPrice - oldPrice) / oldPrice) * 100);
                 if (oldPrice > 0 && oldPrice !== newPrice) {
                     const card = document.querySelector(`[data-symbol="${key}"]`);
                     if (card) {
@@ -203,21 +257,13 @@
                         card.classList.add(newPrice > oldPrice ? 'price-up' : 'price-down');
                     }
                 }
-
-                prices[key].price    = newPrice;
+                prices[key].price = newPrice;
                 prices[key].change24h = change24h;
-
                 updateCount++;
                 document.getElementById('update-count').innerText = updateCount;
                 renderPriceCards();
             };
-
-            ws.onerror = (e) => console.error('[Bybit WS] 에러:', e);
-
-            ws.onclose = () => {
-                console.warn('[Bybit WS] 연결 끊김 — 3초 후 재연결');
-                reconnectTimer = setTimeout(connectBybitWS, 3000);
-            };
+            ws.onclose = () => { reconnectTimer = setTimeout(connectBybitWS, 3000); };
         }
 
         async function updateTopBalance() {
@@ -234,18 +280,7 @@
             renderPriceCards();
             updateTopBalance();
             connectBybitWS();
-        });
-
-        window.addEventListener('pageshow', (e) => {
-            if (e.persisted) {
-                document.getElementById('top-balance').innerText = '-- OMT';
-                updateTopBalance();
-            }
-        });
-
-        window.addEventListener('beforeunload', () => {
-            if (reconnectTimer) clearTimeout(reconnectTimer);
-            if (ws) ws.close();
+            initTradingView();
         });
     </script>
 </body>
