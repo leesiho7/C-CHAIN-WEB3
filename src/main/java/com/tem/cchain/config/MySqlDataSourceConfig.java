@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
-import org.springframework.orm.jpa.vendor.Database;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -22,9 +21,8 @@ import java.util.Properties;
  * MySQL Primary DataSource + JPA EntityManagerFactory 설정.
  *
  * Dialect 전략:
- *   HibernateJpaVendorAdapter.setDatabase(Database.MYSQL)          → Spring ORM MySQL 지정
- *   HibernateJpaVendorAdapter.setDatabasePlatform(MySQLDialect)    → Hibernate 6.x 명시
- *   Properties에서 hibernate.dialect 제거                           → adapter 단독 제어, 이중 설정 충돌 방지
+ *   Properties에서 hibernate.dialect 단일 지점 설정 (Hibernate 6.x 명시)
+ *   HibernateJpaVendorAdapter.setDatabasePlatform() 미사용 — Properties와 중복 방지
  *
  * VectorDbConfig(PostgreSQL)는 JdbcTemplate + Flyway만 사용하므로
  * Hibernate/JPA Dialect 설정 대상이 아님. 서로 완전히 분리됨.
@@ -77,9 +75,9 @@ public class MySqlDataSourceConfig {
 
     /**
      * MySQL 전용 EntityManagerFactory.
-     * - setDatabase(MYSQL): Spring ORM 레벨 DB 타입 명시
-     * - setDatabasePlatform(MySQLDialect): Hibernate 6.x dialect 명시
-     * - Properties에서 hibernate.dialect 제외: adapter 단독 제어로 충돌 방지
+     * - hibernate.dialect: Properties에서 단일 지점 설정 (adapter.setDatabasePlatform 미사용)
+     *   → Spring 6.1.x + Hibernate 6.4.x에서 setDatabase()/setDatabasePlatform() 혼용 시
+     *     발생하는 NoSuchMethodError(내부 API 변경) 방지
      * - com.tem.cchain.entity 패키지만 스캔 (PostgreSQL 엔티티 없음)
      */
     @Primary
@@ -93,19 +91,16 @@ public class MySqlDataSourceConfig {
         em.setPackagesToScan("com.tem.cchain.entity");
         em.setPersistenceUnitName("mysql");
 
-        // Dialect: adapter에서 단일 지점으로 관리
         HibernateJpaVendorAdapter adapter = new HibernateJpaVendorAdapter();
-        adapter.setDatabase(Database.MYSQL);                                       // Spring ORM
-        adapter.setDatabasePlatform("org.hibernate.dialect.MySQLDialect");        // Hibernate 6.x
         adapter.setShowSql(false);
         em.setJpaVendorAdapter(adapter);
 
-        // hibernate.dialect 미포함 — adapter에서 이미 설정, 중복 없음
         Properties props = new Properties();
-        props.put("hibernate.hbm2ddl.auto",              "update");
-        props.put("hibernate.jdbc.batch_size",           "50");
-        props.put("hibernate.order_inserts",             "true");
-        props.put("hibernate.order_updates",             "true");
+        props.put("hibernate.dialect",               "org.hibernate.dialect.MySQLDialect");
+        props.put("hibernate.hbm2ddl.auto",          "update");
+        props.put("hibernate.jdbc.batch_size",       "50");
+        props.put("hibernate.order_inserts",         "true");
+        props.put("hibernate.order_updates",         "true");
         props.put("hibernate.jdbc.batch_versioned_data", "true");
         em.setJpaProperties(props);
 
