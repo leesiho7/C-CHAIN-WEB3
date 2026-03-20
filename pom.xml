@@ -65,6 +65,7 @@
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
 		</dependency>
+		<!-- devtools: 로컬 개발 전용, 빌드 배포 시 fat-jar에서 제외 -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
@@ -110,12 +111,25 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
+					<!-- fat-jar에서 개발/컴파일 전용 라이브러리 제외 → 빌드 메모리 및 jar 크기 절감 -->
 					<excludes>
 						<exclude>
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
 						</exclude>
+						<exclude>
+							<groupId>org.springframework.boot</groupId>
+							<artifactId>spring-boot-devtools</artifactId>
+						</exclude>
 					</excludes>
+				</configuration>
+			</plugin>
+			<!-- 컴파일러: fork=false(기본값) 유지 → MAVEN_OPTS JVM 내에서 실행, 별도 프로세스 불필요 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<fork>false</fork>
 				</configuration>
 			</plugin>
 		</plugins>
