@@ -60,7 +60,6 @@ public class VectorDbConfig {
                 .locations("classpath:db/migration")
                 .baselineOnMigrate(true)
                 .outOfOrder(true)
-                .repairOnMigrate(true)
                 .load();
         flyway.migrate();
         return flyway;
