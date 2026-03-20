@@ -24,13 +24,13 @@ public class VectorDbConfig {
     @Value("${VECTORDB_PORT:5432}")
     private String port;
 
-    @Value("${VECTORDB_DATABASE}")
+    @Value("${VECTORDB_DATABASE:vectordb}")
     private String database;
 
-    @Value("${VECTORDB_USER}")
+    @Value("${VECTORDB_USER:postgres}")
     private String user;
 
-    @Value("${VECTORDB_PASSWORD}")
+    @Value("${VECTORDB_PASSWORD:}")
     private String password;
 
     /**

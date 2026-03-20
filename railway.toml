@@ -1,8 +1,10 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "./mvnw package -DskipTests -q"
+# MAVEN_OPTS: 빌드 시 JVM 메모리 상한 설정 (빌드 OOM 방지)
+buildCommand = "MAVEN_OPTS='-Xmx384m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC' ./mvnw package -DskipTests -q"
 
 [deploy]
+# 런타임 JVM 메모리 제한 (컨테이너 RAM의 70% 이내로 힙 제한)
 startCommand = "java -XX:+UseSerialGC -XX:MaxRAMPercentage=70.0 -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=64m -Djava.security.egd=file:/dev/./urandom -jar target/cchain-0.1.jar"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
