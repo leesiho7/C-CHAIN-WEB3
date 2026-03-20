@@ -49,16 +49,14 @@ public class MemberService {
         }
     }
 
+    @Transactional
     public boolean autoDeposit(String email, double amount) throws Exception {
         Optional<Member> memberOpt = memberRepository.findById(email);
         if (memberOpt.isEmpty()) return false;
-        
+
         Member m = memberOpt.get();
-        
-        // 하드코딩된 키 대신 변수 사용
-        Credentials credentials = Credentials.create(adminPrivateKey);
-        
         m.setOmtBalance(m.getOmtBalance().add(java.math.BigDecimal.valueOf(amount)));
+        memberRepository.save(m);  // save() 없으면 DB에 반영 안 됨
         return true;
     }
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,6 +16,17 @@
             </div>
             <h1 class="text-2xl font-black text-slate-800 uppercase tracking-tight">C-Chain Login</h1>
             <p class="text-slate-400 text-sm mt-2">한-중 기술 공유 플랫폼의 멤버가 되어보세요.</p>
+        </div>
+
+        <!-- 로그인 실패 에러 메시지 -->
+        <div th:if="${loginError}" class="bg-red-50 border border-red-200 text-red-700 px-5 py-3 rounded-xl text-sm mb-4 text-center font-medium">
+            <i class="fa-solid fa-circle-exclamation mr-2"></i>
+            <span th:text="${loginError}"></span>
+        </div>
+        <!-- 회원가입 완료 메시지 -->
+        <div th:if="${param.registered}" class="bg-green-50 border border-green-200 text-green-700 px-5 py-3 rounded-xl text-sm mb-4 text-center font-medium">
+            <i class="fa-solid fa-circle-check mr-2"></i>
+            회원가입이 완료되었습니다. 로그인해주세요.
         </div>
 
         <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
