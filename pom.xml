@@ -76,10 +76,17 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- PostgreSQL 드라이버 (VectorDB용) -->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- Flyway — Spring Boot 3.2.x = Flyway 9.x, PostgreSQL 지원 내장 -->
 		<dependency>
 			<groupId>org.flywaydb</groupId>
-			<artifactId>flyway-database-postgresql</artifactId>
-			<version>10.10.0</version>
+			<artifactId>flyway-core</artifactId>
 		</dependency>
 	</dependencies>
 
