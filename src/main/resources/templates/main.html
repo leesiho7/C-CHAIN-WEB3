@@ -197,13 +197,29 @@
             const submitBtn = document.getElementById('submit-btn');
 
             if (el.dataset.status === 'COMPLETED') {
-                inputArea.readOnly = true; 
+                inputArea.readOnly = true;
                 submitBtn.classList.add('hidden');
-                inputArea.value = "이 문서는 이미 검증 완료되었습니다.";
+                inputArea.value = "번역 내용을 불러오는 중...";
+                // 실제 검증 완료된 번역 내용 조회
+                fetch(`/api/translation/completed/${currentDocId}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            inputArea.value = data.contentKr;
+                            document.querySelector('.p-3.bg-blue-50.border-b').innerHTML =
+                                `<span class="text-[10px] font-black text-blue-600 tracking-widest uppercase">✅ 검증 완료 번역본 (KR)</span>
+                                 <span class="ml-3 text-[10px] text-gray-400">번역자: ${data.userEmail} · ${data.verifiedAt.substring(0,10)}</span>`;
+                        } else {
+                            inputArea.value = "번역 내용을 불러올 수 없습니다.";
+                        }
+                    })
+                    .catch(() => { inputArea.value = "번역 내용을 불러올 수 없습니다."; });
             } else {
-                inputArea.readOnly = false; 
+                inputArea.readOnly = false;
                 submitBtn.classList.remove('hidden');
                 inputArea.value = "";
+                document.querySelector('.p-3.bg-blue-50.border-b').innerHTML =
+                    `<span class="text-[10px] font-black text-blue-600 tracking-widest uppercase">Translation (KR)</span>`;
             }
 
             document.getElementById('workspace').classList.remove('translate-x-full');
