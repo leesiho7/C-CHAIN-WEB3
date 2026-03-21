@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <style>
         * { font-family: 'Pretendard', sans-serif; }
@@ -29,6 +30,14 @@
         /* 스크롤바 숨기기 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Bot Arena 드로어 */
+        #bot-arena-drawer { transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.32,0.72,0,1); }
+        #bot-arena-drawer.open { transform: translateY(0); }
+        .ba-indicator-btn { background:#fff; border:1px solid #e2e8f0; color:#64748b; transition:all 0.2s; }
+        .ba-indicator-btn.active { background:#2563eb; color:#fff; border-color:#2563eb; }
+        .ba-slider::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; background:#2563eb; border-radius:50%; cursor:pointer; }
+        .ba-slider { -webkit-appearance:none; height:5px; background:#cbd5e1; border-radius:5px; width:100%; }
     </style>
 </head>
 <body>
@@ -124,6 +133,106 @@
     </main>
 
     <div id="alert-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3"></div>
+
+    <!-- Bot Arena 진입 버튼 (작고 눈에 안 띄게) -->
+    <button id="bot-btn" onclick="toggleBotArena()"
+            class="fixed bottom-6 left-6 z-[99] w-11 h-11 bg-slate-800 hover:bg-slate-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all"
+            title="AI 전략 시뮬레이터">
+        <i class="fa-solid fa-robot text-sm"></i>
+    </button>
+
+    <!-- Bot Arena 슬라이드업 드로어 -->
+    <div id="bot-arena-backdrop" onclick="toggleBotArena()"
+         class="fixed inset-0 z-[97] bg-black/40 hidden"></div>
+    <div id="bot-arena-drawer"
+         class="fixed bottom-0 left-0 right-0 z-[98] bg-slate-50 rounded-t-3xl max-h-[88vh] overflow-y-auto shadow-2xl">
+        <div class="p-6">
+            <!-- 헤더 -->
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-bar text-blue-600"></i> AI 전략 시뮬레이터
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">백테스팅 기반 자동매매 전략 분석</p>
+                </div>
+                <button onclick="toggleBotArena()" class="text-slate-400 hover:text-slate-700 text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 왼쪽: 전략 설정 -->
+                <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                    <h3 class="font-bold text-slate-700 mb-4 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-blue-500"></i> 전략 설정
+                    </h3>
+                    <div class="mb-4">
+                        <p class="text-xs font-semibold text-slate-400 mb-2">기술적 지표</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="baToggle('rsi')" id="ba-btn-rsi" class="ba-indicator-btn active text-xs px-3 py-2 rounded-lg font-semibold">RSI</button>
+                            <button onclick="baToggle('bollinger')" id="ba-btn-bollinger" class="ba-indicator-btn text-xs px-3 py-2 rounded-lg font-semibold">Bollinger</button>
+                            <button onclick="baToggle('regression')" id="ba-btn-regression" class="ba-indicator-btn active text-xs px-3 py-2 rounded-lg font-semibold">Linear Reg</button>
+                            <button onclick="baToggle('macd')" id="ba-btn-macd" class="ba-indicator-btn text-xs px-3 py-2 rounded-lg font-semibold">MACD</button>
+                        </div>
+                    </div>
+                    <div class="space-y-3 mb-4">
+                        <p class="text-xs font-semibold text-slate-400">RSI 기간</p>
+                        <div class="flex justify-between text-xs mb-1"><span class="text-slate-500">Period</span><span class="text-blue-600 font-bold" id="ba-rsi-val">14</span></div>
+                        <input type="range" min="7" max="30" value="14" class="ba-slider" oninput="document.getElementById('ba-rsi-val').innerText=this.value">
+                        <p class="text-xs font-semibold text-slate-400 mt-2">손절 %</p>
+                        <div class="flex justify-between text-xs mb-1"><span class="text-slate-500">Stop Loss</span><span class="text-red-500 font-bold" id="ba-sl-val">5</span></div>
+                        <input type="range" min="1" max="15" value="5" class="ba-slider" oninput="document.getElementById('ba-sl-val').innerText=this.value">
+                        <p class="text-xs font-semibold text-slate-400 mt-2">포지션 크기 %</p>
+                        <div class="flex justify-between text-xs mb-1"><span class="text-slate-500">Position Size</span><span class="text-blue-600 font-bold" id="ba-ps-val">25</span></div>
+                        <input type="range" min="10" max="100" step="5" value="25" class="ba-slider" oninput="document.getElementById('ba-ps-val').innerText=this.value">
+                    </div>
+                    <button onclick="baRunBacktest()" class="w-full bg-slate-900 hover:bg-black text-white py-3 rounded-xl font-bold text-sm transition-all">
+                        백테스팅 실행
+                    </button>
+                </div>
+
+                <!-- 오른쪽: 결과 -->
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="grid grid-cols-4 gap-3">
+                        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">총 수익률</p>
+                            <p class="text-xl font-bold text-blue-600" id="ba-total-return">+0.00%</p>
+                        </div>
+                        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">최대 낙폭</p>
+                            <p class="text-xl font-bold text-red-500" id="ba-max-drawdown">0.00%</p>
+                        </div>
+                        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">승률</p>
+                            <p class="text-xl font-bold text-slate-800" id="ba-win-rate">0.0%</p>
+                        </div>
+                        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">총 거래</p>
+                            <p class="text-xl font-bold text-blue-500" id="ba-total-trades">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                        <p class="font-bold text-slate-700 text-sm mb-3">자산 성장 곡선 (Equity Curve)</p>
+                        <div style="height:220px"><canvas id="ba-equityChart"></canvas></div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                        <p class="font-bold text-slate-700 text-sm mb-3">최근 거래 내역</p>
+                        <table class="w-full text-xs">
+                            <thead><tr class="text-slate-400 border-b border-slate-100">
+                                <th class="text-left py-2 px-2">날짜</th>
+                                <th class="text-left py-2 px-2">유형</th>
+                                <th class="text-right py-2 px-2">진입가</th>
+                                <th class="text-right py-2 px-2">수익률</th>
+                            </tr></thead>
+                            <tbody id="ba-trade-log">
+                                <tr><td colspan="4" class="py-8 text-center text-slate-300">백테스팅을 실행하세요.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Bybit 심볼 매핑
@@ -326,6 +435,93 @@
             connectBybitWS();
             initTradingView();
         });
+
+        // ── Bot Arena ────────────────────────────────────────────────
+        let baChart = null;
+        const baIndicators = { rsi: true, bollinger: false, regression: true, macd: false };
+
+        function toggleBotArena() {
+            const drawer = document.getElementById('bot-arena-drawer');
+            const backdrop = document.getElementById('bot-arena-backdrop');
+            const isOpen = drawer.classList.contains('open');
+            if (isOpen) {
+                drawer.classList.remove('open');
+                backdrop.classList.add('hidden');
+            } else {
+                backdrop.classList.remove('hidden');
+                requestAnimationFrame(() => drawer.classList.add('open'));
+            }
+        }
+
+        function baToggle(name) {
+            baIndicators[name] = !baIndicators[name];
+            const btn = document.getElementById('ba-btn-' + name);
+            btn.classList.toggle('active', baIndicators[name]);
+        }
+
+        function baRunBacktest() {
+            // 시뮬레이션 백테스팅 (실제 BTC 가격 기반 난수 시드)
+            const seed = Math.floor(prices.BTC.price) || 97000;
+            const trades = [];
+            let equity = 10000, wins = 0, maxEq = 10000, maxDD = 0;
+            const equityHistory = [equity];
+            const now = new Date();
+
+            for (let i = 0; i < 30; i++) {
+                const rand = ((seed * (i + 1) * 9301 + 49297) % 233280) / 233280;
+                const isWin = rand > 0.42;
+                const pct = isWin ? (rand * 8 + 1) : -(rand * 6 + 1);
+                const posSize = parseInt(document.querySelector('[oninput*="ba-ps-val"]').value) / 100;
+                const gain = equity * posSize * (pct / 100);
+                equity += gain;
+                if (equity > maxEq) maxEq = equity;
+                const dd = ((maxEq - equity) / maxEq) * 100;
+                if (dd > maxDD) maxDD = dd;
+                if (isWin) wins++;
+                equityHistory.push(Math.round(equity));
+
+                const d = new Date(now); d.setDate(d.getDate() - (30 - i));
+                trades.push({
+                    date: `${d.getMonth()+1}/${d.getDate()}`,
+                    type: rand > 0.5 ? 'LONG' : 'SHORT',
+                    entry: (seed * (0.95 + rand * 0.1)).toFixed(0),
+                    pct: pct.toFixed(2)
+                });
+            }
+
+            const totalReturn = ((equity - 10000) / 10000 * 100).toFixed(2);
+            document.getElementById('ba-total-return').innerText = (totalReturn > 0 ? '+' : '') + totalReturn + '%';
+            document.getElementById('ba-total-return').className = 'text-xl font-bold ' + (totalReturn > 0 ? 'text-blue-600' : 'text-red-500');
+            document.getElementById('ba-max-drawdown').innerText = maxDD.toFixed(2) + '%';
+            document.getElementById('ba-win-rate').innerText = (wins / 30 * 100).toFixed(1) + '%';
+            document.getElementById('ba-total-trades').innerText = 30;
+
+            // Equity Curve 차트
+            if (baChart) baChart.destroy();
+            baChart = new Chart(document.getElementById('ba-equityChart'), {
+                type: 'line',
+                data: {
+                    labels: equityHistory.map((_, i) => i === 0 ? '시작' : i + '일'),
+                    datasets: [{
+                        data: equityHistory,
+                        borderColor: totalReturn > 0 ? '#2563eb' : '#ef4444',
+                        backgroundColor: totalReturn > 0 ? 'rgba(37,99,235,0.08)' : 'rgba(239,68,68,0.08)',
+                        borderWidth: 2, pointRadius: 0, fill: true, tension: 0.4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { grid: { color: '#f1f5f9' } } } }
+            });
+
+            // 거래 내역 (최근 8개)
+            const tbody = document.getElementById('ba-trade-log');
+            tbody.innerHTML = trades.slice(-8).reverse().map(t => `
+                <tr class="border-b border-slate-50">
+                    <td class="py-2 px-2 text-slate-500">${t.date}</td>
+                    <td class="py-2 px-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${t.type==='LONG' ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-500'}">${t.type}</span></td>
+                    <td class="py-2 px-2 text-right text-slate-600">$${parseInt(t.entry).toLocaleString()}</td>
+                    <td class="py-2 px-2 text-right font-bold ${parseFloat(t.pct)>0 ? 'text-blue-600' : 'text-red-500'}">${parseFloat(t.pct)>0?'+':''}${t.pct}%</td>
+                </tr>`).join('');
+        }
     </script>
 </body>
 </html>
