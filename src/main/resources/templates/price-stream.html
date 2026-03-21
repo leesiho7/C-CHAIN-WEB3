@@ -96,8 +96,8 @@
                             <i class="fa-solid fa-robot"></i>
                         </div>
                         <div>
-                            <h3 class="font-bold">Quant AI Agent</h3>
-                            <p class="text-[10px] text-blue-300 uppercase tracking-widest font-bold">Strategy: Fibonacci & Linear</p>
+                            <h3 class="font-bold">Dober AI Agent</h3>
+                            <p class="text-[10px] text-blue-300 uppercase tracking-widest font-bold">Strategy: Eliottwave & Shortspeciallist</p>
                         </div>
                     </div>
                     
@@ -105,8 +105,8 @@
                         <div class="flex gap-2">
                             <div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] shrink-0">AI</div>
                             <p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none leading-relaxed text-gray-200">
-                                안녕하세요! 현재 비트코인의 피보나치 수치와 선형 회귀 채널을 분석 중입니다. <br><br>
-                                <span class="text-blue-400 font-bold">"비트코인 0.618 반등 가능성 분석해줘"</span>라고 입력해보세요.
+                                안녕하세요! 현재 비트코인의 엘리어트파동을 분석 중입니다. <br><br>
+                                <span class="text-blue-400 font-bold">"비트코인 파동을 분석해줘"</span>라고 입력해보세요.
                             </p>
                         </div>
                     </div>
@@ -158,37 +158,70 @@
             });
         }
 
-        // AI 시뮬레이션 응답
-        function askAI() {
+        // AI 에이전트 실제 호출
+        async function askAI() {
             const input = document.getElementById('ai-input');
             const history = document.getElementById('ai-chat-history');
             if (!input.value.trim()) return;
 
-            // 사용자 메시지
+            // 사용자 메시지 출력
+            const userText = input.value.trim();
+            input.value = '';
+            input.disabled = true;
+
             const userDiv = document.createElement('div');
             userDiv.className = 'flex justify-end';
-            userDiv.innerHTML = `<p class="bg-blue-600 p-3 rounded-2xl rounded-tr-none max-w-[80%] text-sm">${input.value}</p>`;
+            userDiv.innerHTML = `<p class="bg-blue-600 p-3 rounded-2xl rounded-tr-none max-w-[80%] text-sm">${userText.replace(/</g, '&lt;')}</p>`;
             history.appendChild(userDiv);
-            
-            const userText = input.value;
-            input.value = '';
             history.scrollTop = history.scrollHeight;
 
-            // AI 메시지 (시뮬레이션)
-            setTimeout(() => {
-                const aiDiv = document.createElement('div');
-                aiDiv.className = 'flex gap-2 animate-pulse';
-                aiDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px]">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm text-gray-400 italic">퀀트 알고리즘 연산 중...</p>`;
-                history.appendChild(aiDiv);
-                history.scrollTop = history.scrollHeight;
+            // 로딩 메시지
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'flex gap-2';
+            loadingDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] shrink-0">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm text-gray-400 italic animate-pulse">퀀트 알고리즘 연산 중...</p>`;
+            history.appendChild(loadingDiv);
+            history.scrollTop = history.scrollHeight;
 
-                setTimeout(() => {
-                    aiDiv.classList.remove('animate-pulse');
-                    aiDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px]">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm leading-relaxed">"${userText}"에 대한 분석 결과: 현재 BTC는 피보나치 0.618 되돌림 구간($${prices.BTC.price.toLocaleString()})에서 강력한 지지를 받고 있습니다. 회귀 채널 하단과 겹치는 구간으로 단기 반등 확률이 높습니다.</p>`;
-                    history.scrollTop = history.scrollHeight;
-                }, 1500);
-            }, 500);
+            try {
+                // Bybit REST API에서 BTC 60분봉 50개 조회
+                const klineRes = await fetch('https://api.bybit.com/v5/market/kline?category=spot&symbol=BTCUSDT&interval=60&limit=50');
+                const klineJson = await klineRes.json();
+                const candleData = JSON.stringify(klineJson.result?.list ?? []);
+
+                // Java 백엔드 → Python AI 에이전트 호출
+                const res = await fetch('/api/ai/quant-analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        symbol: 'BTCUSDT',
+                        btcPrice: prices.BTC.price,
+                        candleData: candleData
+                    })
+                });
+
+                const data = await res.json();
+                const answer = (data.answer || '응답 없음')
+                    .replace(/</g, '&lt;')
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br>');
+
+                loadingDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] shrink-0">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm leading-relaxed">${answer}</p>`;
+
+            } catch (e) {
+                loadingDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center text-[10px] shrink-0">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm text-red-400">AI 에이전트 연결 실패. 잠시 후 다시 시도해주세요.</p>`;
+            } finally {
+                input.disabled = false;
+                input.focus();
+                history.scrollTop = history.scrollHeight;
+            }
         }
+
+        // 엔터키로 전송
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('ai-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') askAI();
+            });
+        });
 
         // 가격 알림
         function showPriceAlert(symbol, change) {
