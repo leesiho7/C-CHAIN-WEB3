@@ -155,9 +155,15 @@
                     </h2>
                     <p class="text-xs text-slate-400 mt-0.5">백테스팅 기반 자동매매 전략 분석</p>
                 </div>
-                <button onclick="toggleBotArena()" class="text-slate-400 hover:text-slate-700 text-xl">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
+                <div class="flex items-center gap-3">
+                    <button onclick="alert('봇 연동 기능은 준비 중입니다.')"
+                            class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow transition">
+                        <i class="fa-solid fa-bolt"></i> 봇 연동하기
+                    </button>
+                    <button onclick="toggleBotArena()" class="text-slate-400 hover:text-slate-700 text-xl">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
