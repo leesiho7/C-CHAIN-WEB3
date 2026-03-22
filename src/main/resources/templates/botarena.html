@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C-Chain | AI Quant Strategy Tester</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap');
+
+        :root {
+            --cchain-blue: #2563eb;
+            --cchain-bg: #f8fafc;
+            --cchain-card: rgba(255, 255, 255, 0.9);
+        }
+
+        body {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            font-family: 'Pretendard', sans-serif;
+            color: #1e293b;
+            min-height: 100vh;
+        }
+
+        /* C-Chain Glass Card Design */
+        .gradient-card {
+            background: var(--cchain-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        }
+
+        .glow-effect {
+            box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.3);
+        }
+
+        /* Indicator Buttons */
+        .indicator-btn {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            transition: all 0.3s ease;
+        }
+
+        .indicator-btn.active {
+            background: var(--cchain-blue);
+            color: #ffffff;
+            border-color: var(--cchain-blue);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        /* Slider Customization */
+        .slider-input {
+            -webkit-appearance: none;
+            background: #cbd5e1;
+            height: 6px;
+            border-radius: 5px;
+        }
+
+        .slider-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--cchain-blue);
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Top Shimmer Animation */
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--cchain-blue), transparent);
+            animation: shimmer 2.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.3);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="p-4 lg:p-8">
+    
+    <div class="max-w-7xl mx-auto mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900 mb-1 flex items-center gap-3">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    <span class="text-blue-600">C-Chain</span> AI 전략 시뮬레이터
+                </h1>
+                <p class="text-slate-500 text-sm font-medium">백테스팅 기반 자동매매 전략 분석 도구</p>
+            </div>
+            <button onclick="openApiModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition-all glow-effect flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                봇 연동하기
+            </button>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div class="lg:col-span-1 space-y-6">
+            <div class="gradient-card rounded-2xl p-6">
+                <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+                    </svg>
+                    전략 설정
+                </h2>
+                
+                <div class="mb-5">
+                    <label class="text-sm font-semibold text-slate-500 mb-3 block">기술적 지표 선택</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="toggleIndicator('rsi')" id="btn-rsi" class="indicator-btn active text-sm px-4 py-3 rounded-lg font-semibold">RSI</button>
+                        <button onclick="toggleIndicator('bollinger')" id="btn-bollinger" class="indicator-btn text-sm px-4 py-3 rounded-lg font-semibold">Bollinger</button>
+                        <button onclick="toggleIndicator('regression')" id="btn-regression" class="indicator-btn active text-sm px-4 py-3 rounded-lg font-semibold">Linear Reg</button>
+                        <button onclick="toggleIndicator('macd')" id="btn-macd" class="indicator-btn text-sm px-4 py-3 rounded-lg font-semibold">MACD</button>
+                    </div>
+                </div>
+
+                <div id="rsi-params" class="mb-5 bg-slate-50 rounded-xl p-4 border border-slate-200">
+                    <h3 class="text-sm font-bold text-slate-700 mb-3">RSI 파라미터</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-xs mb-2">
+                                <span class="text-slate-500">기간 (Period)</span>
+                                <span class="text-blue-600 font-bold" id="rsi-period-value">14</span>
+                            </div>
+                            <input type="range" min="7" max="30" value="14" class="slider-input w-full" oninput="updateValue('rsi-period', this.value)">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-2">
+                                <span class="text-slate-500">과매수 (Overbought)</span>
+                                <span class="text-red-500 font-bold" id="rsi-overbought-value">70</span>
+                            </div>
+                            <input type="range" min="60" max="90" value="70" class="slider-input w-full" oninput="updateValue('rsi-overbought', this.value)">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-2">
+                                <span class="text-slate-500">과매도 (Oversold)</span>
+                                <span class="text-green-600 font-bold" id="rsi-oversold-value">30</span>
+                            </div>
+                            <input type="range" min="10" max="40" value="30" class="slider-input w-full" oninput="updateValue('rsi-oversold', this.value)">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="regression-params" class="mb-5 bg-slate-50 rounded-xl p-4 border border-slate-200">
+                    <h3 class="text-sm font-bold text-slate-700 mb-3">선형 회귀 파라미터</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-xs mb-2">
+                                <span class="text-slate-500">Look-back Period</span>
+                                <span class="text-blue-600 font-bold" id="reg-period-value">50</span>
+                            </div>
+                            <input type="range" min="20" max="200" value="50" class="slider-input w-full" oninput="updateValue('reg-period', this.value)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-5 bg-slate-50 rounded-xl p-4 border border-slate-200">
+                    <h3 class="text-sm font-bold text-slate-700 mb-3">리스크 관리</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-xs mb-2">
+                                <span class="text-slate-500">손절 (Stop Loss %)</span>
+                                <span class="text-red-500 font-bold" id="stop-loss-value">5</span>
+                            </div>
+                            <input type="range" min="1" max="15" value="5" class="slider-input w-full" oninput="updateValue('stop-loss', this.value)">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-2">
+                                <span class="text-slate-500">포지션 크기 (%)</span>
+                                <span class="text-blue-600 font-bold" id="position-size-value">25</span>
+                            </div>
+                            <input type="range" min="10" max="100" step="5" value="25" class="slider-input w-full" oninput="updateValue('position-size', this.value)">
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="runBacktest()" class="w-full bg-slate-900 hover:bg-black text-white py-4 rounded-xl font-bold text-lg transition-all glow-effect">
+                    백테스팅 실행
+                </button>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2 space-y-6">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="stat-card gradient-card rounded-2xl p-5 relative overflow-hidden">
+                    <div class="text-xs font-bold text-slate-400 mb-1 uppercase tracking-tighter">총 수익률</div>
+                    <div class="text-2xl font-bold text-blue-600" id="total-return">+0.00%</div>
+                </div>
+                <div class="stat-card gradient-card rounded-2xl p-5 relative overflow-hidden">
+                    <div class="text-xs font-bold text-slate-400 mb-1 uppercase tracking-tighter">최대 낙폭</div>
+                    <div class="text-2xl font-bold text-red-500" id="max-drawdown">0.00%</div>
+                </div>
+                <div class="stat-card gradient-card rounded-2xl p-5 relative overflow-hidden">
+                    <div class="text-xs font-bold text-slate-400 mb-1 uppercase tracking-tighter">승률</div>
+                    <div class="text-2xl font-bold text-slate-800" id="win-rate">0.0%</div>
+                </div>
+                <div class="stat-card gradient-card rounded-2xl p-5 relative overflow-hidden">
+                    <div class="text-xs font-bold text-slate-400 mb-1 uppercase tracking-tighter">총 거래</div>
+                    <div class="text-2xl font-bold text-blue-500" id="total-trades">0</div>
+                </div>
+            </div>
+
+            <div class="gradient-card rounded-2xl p-6">
+                <h3 class="text-slate-800 font-bold mb-6">자산 성장 곡선 (Equity Curve)</h3>
+                <div style="height: 320px;"><canvas id="equityChart"></canvas></div>
+            </div>
+
+            <div class="gradient-card rounded-2xl p-6">
+                <h3 class="text-slate-800 font-bold mb-4 text-sm">최근 거래 내역</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="text-slate-400 border-b border-slate-100">
+                                <th class="text-left py-3 px-2 font-semibold">날짜</th>
+                                <th class="text-left py-3 px-2 font-semibold">유형</th>
+                                <th class="text-right py-3 px-2 font-semibold">진입가</th>
+                                <th class="text-right py-3 px-2 font-semibold">수익률</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trade-log">
+                            <tr><td colspan="4" class="py-10 text-center text-slate-300 font-medium">분석을 실행하여 데이터를 생성하세요.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="apiModal" class="modal">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100">
+            <h3 class="text-2xl font-bold text-slate-900 mb-6">자동매매 봇 연동</h3>
+            <div class="space-y-4">
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-500">API Key</label>
+                    <input type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500">
+                </div>
+                <div class="p-4 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-600 leading-relaxed">
+                    <b>C-Chain 보안:</b> 입력된 정보는 암호화되어 관리되며 출금 권한이 없는 API 키 사용을 권장합니다.
+                </div>
+                <div class="flex gap-3 pt-4">

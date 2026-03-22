@@ -33,17 +33,15 @@ public class AiAnalysisController {
         Double currentPrice = (btcPriceObj instanceof Number) ? ((Number) btcPriceObj).doubleValue() : 0.0;
         String candleData = (String) request.get("candleData");
 
-        // 2. [S-Class 로직] 일상적인 인사는 자바에서 가볍게 응답 (필터링 조건 완화)
-        // 사용자가 "분석"이나 "타점"을 묻지 않아도 트레이딩 관련 질문은 파이썬으로 보내기 위해
-        // 아주 기본적인 인사말만 여기서 처리합니다.
+        // 2. [페르소나] 일상적인 인사는 자바에서 즉시 응답
         if (userQuestion != null && userQuestion.matches(".*(안녕|반가|누구|이름|뭐해|하이).*")) {
             Map<String, Object> welcome = new HashMap<>();
-            welcome.put("answer", "반갑습니다! 🤖 저는 **Dober AI**입니다. 현재 비트코인 차트를 분석 중입니다. '지금 롱/숏 어때?' 혹은 '파동 분석해줘'라고 자유롭게 물어봐 주세요!");
+            welcome.put("answer", "반갑습니다! 🤖 저는 **Dober AI** 에이전트입니다. 현재 비트코인 차트를 정밀 분석 중입니다. '지금 롱/숏 어때?' 혹은 '파동 분석해봐'라고 자유롭게 물어봐 주세요!");
             welcome.put("status", "STAY");
             return ResponseEntity.ok(welcome);
         }
 
-        // 3. 파이썬 에이전트 호출 준비 (모든 트레이딩 질문은 파이썬 GPT-4가 처리)
+        // 3. 파이썬 에이전트 호출 준비
         String pythonEndpoint = aiAgentUrl + "/api/v1/analyze-short";
         
         Map<String, Object> pythonRequest = new HashMap<>();
@@ -51,22 +49,30 @@ public class AiAnalysisController {
         pythonRequest.put("current_price", currentPrice);
         pythonRequest.put("df_json", candleData);
         
-        // [핵심] 422 에러 방지 및 질문 전달
-        // 질문이 비어있으면 기본 분석을 요청하고, 있으면 그 내용을 그대로 파이썬에 전달합니다.
+        // 422 에러 방지를 위한 질문 기본값 설정
         String finalQuestion = (userQuestion == null || userQuestion.trim().isEmpty()) ? "현재 시장 상황을 분석해줘" : userQuestion;
         pythonRequest.put("question", finalQuestion);
 
         try {
             log.info("🤖 AI 정밀 분석 요청 전송: [{}]", finalQuestion);
             
-            // 파이썬 서버로 POST 요청
+            // 파이썬 서버로 POST 요청 (Map 형태로 응답 수신)
             Map<String, Object> aiResult = restTemplate.postForObject(pythonEndpoint, pythonRequest, Map.class);
 
             Map<String, Object> response = new HashMap<>();
-            if (aiResult != null) {
-                // 파이썬 GPT가 질문 의도에 맞춰 생성한 'reason'을 그대로 전달
-                response.put("answer", aiResult.get("reason"));
-                response.put("status", aiResult.get("decision"));
+            
+            // [핵심 보완] 응답 데이터 검증 및 필드 매칭
+            if (aiResult != null && aiResult.get("reason") != null) {
+                // 파이썬의 'reason'을 프론트가 기다리는 'answer'로 변환하여 전달
+                String reasonStr = String.valueOf(aiResult.get("reason"));
+                String statusStr = String.valueOf(aiResult.get("decision"));
+
+                response.put("answer", reasonStr.isEmpty() ? "분석 결과가 비어 있습니다." : reasonStr);
+                response.put("status", statusStr);
+            } else {
+                // 통신은 성공했으나 데이터가 유효하지 않을 때
+                response.put("answer", "🤖 AI 분석 엔진에서 유효한 리포트를 생성하지 못했습니다. 다시 시도해 주세요.");
+                response.put("status", "STAY");
             }
             
             return ResponseEntity.ok(response);
