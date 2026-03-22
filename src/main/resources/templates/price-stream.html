@@ -242,8 +242,9 @@
 
     <script>
         // 전역 TradingView 참조 — 명시적 초기화
-        window.tvWidget = null;
-        window.tvChart  = null; // onChartReady 이후에만 유효
+        window.tvWidget         = null;
+        window.tvChart          = null;   // onChartReady 이후 확정
+        window.pendingVisualData = null;  // 차트 미준비 시 데이터 캐싱
 
         // Bybit 심볼 매핑
         const SYMBOL_MAP = { 'BTCUSDT': 'BTC', 'ETHUSDT': 'ETH', 'SOLUSDT': 'SOL' };
@@ -258,92 +259,83 @@
         let ws = null;
         let reconnectTimer = null;
 
+        // 실제 createShape 실행 함수
+        function renderShapes(chart, points) {
+            points.forEach(function(point) {
+                // ms(13자리) → s(10자리) 정수 변환
+                var correctedTime = Math.floor(Number(point.timestamp) / 1000);
+                try {
+                    chart.createShape(
+                        { time: correctedTime, price: parseFloat(point.price) },
+                        {
+                            shape:            point.type === 'high' ? 'arrow_down' : 'arrow_up',
+                            text:             point.label + "파",
+                            lock:             true,
+                            disableSelection: true,
+                            overrides: {
+                                color:      point.type === 'high' ? "#FF9800" : "#2196F3",
+                                textcolor:  "#ffffff",
+                                fontsize:   12,
+                                fontweight: "bold",
+                                placetext:  point.type === 'high' ? "above" : "below"
+                            }
+                        }
+                    );
+                } catch(e) {
+                    console.warn("⚠️ createShape 실패:", point, e.message);
+                }
+            });
+            console.log("✅ 파동 시각화 렌더링 완료 — " + points.length + "개 좌표");
+        }
+
         // 트레이딩뷰 초기화
-        // window.tvChart는 onChartReady 이후에만 설정 → 이 시점부터 createShape 사용 가능
         function initTradingView() {
             window.tvWidget = new TradingView.widget({
-                "container_id": "tradingview_widget",
-                "autosize": true,
-                "symbol": "BYBIT:BTCUSDT",
-                "interval": "60",
-                "timezone": "Asia/Seoul",
-                "theme": "light",
-                "style": "1",
-                "locale": "ko",
-                "toolbar_bg": "#f1f3f6",
-                "enable_publishing": false,
-                "hide_side_toolbar": false,
+                "container_id":    "tradingview_widget",
+                "autosize":        true,
+                "symbol":          "BYBIT:BTCUSDT",
+                "interval":        "60",
+                "timezone":        "Asia/Seoul",
+                "theme":           "light",
+                "style":           "1",
+                "locale":          "ko",
+                "toolbar_bg":      "#f1f3f6",
+                "enable_publishing":  false,
+                "hide_side_toolbar":  false,
                 "allow_symbol_change": true,
-                "studies": ["MAExp@tv-basicstudies", "RSI@tv-basicstudies"],
-                "onChartReady": function() {
-                    window.tvChart = window.tvWidget.chart();
-                    console.log("✅ TradingView 차트 준비 완료 — 시각화 사용 가능");
+                "studies": ["MAExp@tv-basicstudies", "RSI@tv-basicstudies"]
+            });
+
+            // onChartReady: 위젯이 직접 신호를 줄 때만 실행
+            window.tvWidget.onChartReady(function() {
+                // activeChart() 우선, 없으면 chart() fallback
+                var chart = null;
+                try { chart = window.tvWidget.activeChart(); } catch(e) {}
+                if (!chart) {
+                    try { chart = window.tvWidget.chart(); } catch(e) {}
+                }
+                window.tvChart = chart;
+                console.log("✅ TradingView 차트 준비 완료 — 시각화 사용 가능");
+
+                // 차트가 준비되기 전에 AI 응답이 도착한 경우 → 캐싱된 데이터 즉시 렌더링
+                if (window.pendingVisualData && window.tvChart) {
+                    console.log("📦 캐싱된 파동 데이터 렌더링 시작");
+                    renderShapes(window.tvChart, window.pendingVisualData);
+                    window.pendingVisualData = null;
                 }
             });
         }
 
-        // 파동 시각화 렌더링 함수
-        // onChartReady 콜백에만 의존하지 않고 tvWidget.chart() 직접 폴링
-        function drawWaveShapes(points, attempt) {
-            attempt = attempt || 0;
-
-            // 1. window.tvWidget.chart() 직접 접근 시도 (try-catch로 안전하게)
-            var chart = null;
-            try {
-                if (window.tvWidget && typeof window.tvWidget.chart === 'function') {
-                    chart = window.tvWidget.chart();
-                }
-            } catch (e) {
-                chart = null;
+        // 파동 시각화 진입점
+        // 차트 준비 완료 시 즉시 렌더링, 미준비 시 pendingVisualData에 캐싱
+        function drawWaveShapes(points) {
+            if (window.tvChart) {
+                console.log("🎯 차트 객체 확보 — 그리기 시작 (" + points.length + "개 좌표)");
+                renderShapes(window.tvChart, points);
+            } else {
+                console.log("📦 차트 미준비 — pendingVisualData에 캐싱. 차트 로드 완료 시 자동 렌더링.");
+                window.pendingVisualData = points;
             }
-
-            // 2. onChartReady 콜백으로 저장된 tvChart도 병행 확인
-            if (!chart && window.tvChart) {
-                chart = window.tvChart;
-            }
-
-            // 3. 차트 객체 미확보 → 최대 20회(10초) 재시도
-            if (!chart) {
-                if (attempt < 20) {
-                    console.log("⏳ 차트 객체 대기 중... (" + (attempt + 1) + "/20)");
-                    setTimeout(function() { drawWaveShapes(points, attempt + 1); }, 500);
-                } else {
-                    console.warn("❌ 차트 객체 확보 실패(10초 초과) — 시각화 포기");
-                }
-                return;
-            }
-
-            // 4. 차트 객체 확보 — 그리기 시작
-            console.log("🎯 차트 객체 확보 — 그리기 시작 (" + points.length + "개 좌표)");
-
-            points.forEach(function(point) {
-                // Bybit ms(13자리, 171xxxxxxxxxx) → TradingView s(10자리) 변환
-                var ts = parseInt(point.timestamp);
-                var correctedTime = ts > 9999999999 ? Math.floor(ts / 1000) : ts;
-
-                try {
-                    chart.createShape({
-                        time:  correctedTime,
-                        price: parseFloat(point.price)
-                    }, {
-                        shape:            point.type === 'high' ? 'arrow_down' : 'arrow_up',
-                        text:             point.label + "파",
-                        lock:             true,
-                        disableSelection: true,
-                        overrides: {
-                            color:      point.type === 'high' ? "#FF9800" : "#2196F3",
-                            textcolor:  "#ffffff",
-                            fontsize:   12,
-                            fontweight: "bold",
-                            placetext:  point.type === 'high' ? "above" : "below"
-                        }
-                    });
-                } catch (e) {
-                    console.warn("⚠️ createShape 실패 (point: " + JSON.stringify(point) + "):", e.message);
-                }
-            });
-
-            console.log("✅ 파동 시각화 렌더링 완료 — " + points.length + "개 좌표");
         }
 
         // AI 에이전트 실제 호출
