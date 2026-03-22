@@ -241,6 +241,10 @@
     </div>
 
     <script>
+        // 전역 TradingView 참조 — 명시적 초기화
+        window.tvWidget = null;
+        window.tvChart  = null; // onChartReady 이후에만 유효
+
         // Bybit 심볼 매핑
         const SYMBOL_MAP = { 'BTCUSDT': 'BTC', 'ETHUSDT': 'ETH', 'SOLUSDT': 'SOL' };
         const prices = {
@@ -254,7 +258,8 @@
         let ws = null;
         let reconnectTimer = null;
 
-        // 트레이딩뷰 초기화 — window.tvWidget에 저장해야 askAI에서 접근 가능
+        // 트레이딩뷰 초기화
+        // window.tvChart는 onChartReady 이후에만 설정 → 이 시점부터 createShape 사용 가능
         function initTradingView() {
             window.tvWidget = new TradingView.widget({
                 "container_id": "tradingview_widget",
@@ -269,7 +274,11 @@
                 "enable_publishing": false,
                 "hide_side_toolbar": false,
                 "allow_symbol_change": true,
-                "studies": ["MAExp@tv-basicstudies", "RSI@tv-basicstudies"]
+                "studies": ["MAExp@tv-basicstudies", "RSI@tv-basicstudies"],
+                "onChartReady": function() {
+                    window.tvChart = window.tvWidget.chart();
+                    console.log("✅ TradingView 차트 준비 완료 — 시각화 사용 가능");
+                }
             });
         }
 
@@ -338,40 +347,33 @@
         // 6. [시각화 렌더링] TradingView 차트 위에 파동 좌표 그리기
         if (data.visualData && data.visualData.points) {
             console.log("📊 AI 시각화 데이터 수신:", data.visualData.points);
-            
-            // window.tvWidget 또는 기존 코드에서 선언한 위젯 객체 확인
-            const widget = window.tvWidget; 
-            
-            if (widget && typeof widget.chart === 'function') {
-                const chart = widget.chart();
-                
-                // 기존 마커 제거 (새 분석 시 이전 마커와 겹침 방지)
-                // chart.removeAllShapes(); 
 
+            // window.tvChart: onChartReady 콜백에서 설정된 차트 객체만 사용
+            if (window.tvChart) {
                 data.visualData.points.forEach(point => {
-                    // [핵심] Bybit(ms)를 TV(s) 단위로 변환
+                    // Bybit ms(13자리) → TradingView s(10자리) 변환
                     const correctedTime = Math.floor(parseInt(point.timestamp) / 1000);
-                    
-                    chart.createShape({
-                        time: correctedTime,
+
+                    window.tvChart.createShape({
+                        time:  correctedTime,
                         price: parseFloat(point.price)
                     }, {
                         shape: point.type === 'high' ? 'arrow_down' : 'arrow_up',
-                        text: point.label + "파",
+                        text:  point.label + "파",
                         lock: true,
                         disableSelection: true,
                         overrides: {
-                            color: point.type === 'high' ? "#FF9800" : "#2196F3", // 주황(고), 파랑(저)
-                            textcolor: "#ffffff",
-                            fontsize: 12,
-                            fontweight: "bold",
-                            placetext: point.type === 'high' ? "above" : "below"
+                            color:       point.type === 'high' ? "#FF9800" : "#2196F3",
+                            textcolor:   "#ffffff",
+                            fontsize:    12,
+                            fontweight:  "bold",
+                            placetext:   point.type === 'high' ? "above" : "below"
                         }
                     });
                 });
-                console.log("✅ 차트 오버레이 성공");
+                console.log("✅ 차트 오버레이 성공:", data.visualData.points.length + "개 좌표");
             } else {
-                console.warn("⚠️ 트레이딩뷰 위젯 객체를 찾을 수 없어 시각화를 건너뜁니다.");
+                console.warn("⚠️ 차트 미준비 상태 (onChartReady 대기 중) — 시각화 스킵");
             }
         }
 
