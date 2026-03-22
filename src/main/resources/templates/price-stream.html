@@ -290,40 +290,54 @@
 
         // 트레이딩뷰 초기화
         function initTradingView() {
+            // 1단계: 위젯 생성만 수행
             window.tvWidget = new TradingView.widget({
-                "container_id":    "tradingview_widget",
-                "autosize":        true,
-                "symbol":          "BYBIT:BTCUSDT",
-                "interval":        "60",
-                "timezone":        "Asia/Seoul",
-                "theme":           "light",
-                "style":           "1",
-                "locale":          "ko",
-                "toolbar_bg":      "#f1f3f6",
+                "container_id":       "tradingview_widget",
+                "autosize":           true,
+                "symbol":             "BYBIT:BTCUSDT",
+                "interval":           "60",
+                "timezone":           "Asia/Seoul",
+                "theme":              "light",
+                "style":              "1",
+                "locale":             "ko",
+                "toolbar_bg":         "#f1f3f6",
                 "enable_publishing":  false,
                 "hide_side_toolbar":  false,
                 "allow_symbol_change": true,
                 "studies": ["MAExp@tv-basicstudies", "RSI@tv-basicstudies"]
             });
 
-            // onChartReady: 위젯이 직접 신호를 줄 때만 실행
-            window.tvWidget.onChartReady(function() {
-                // activeChart() 우선, 없으면 chart() fallback
-                var chart = null;
-                try { chart = window.tvWidget.activeChart(); } catch(e) {}
-                if (!chart) {
-                    try { chart = window.tvWidget.chart(); } catch(e) {}
-                }
-                window.tvChart = chart;
-                console.log("✅ TradingView 차트 준비 완료 — 시각화 사용 가능");
+            // 2단계: Ready 스캔 — onChartReady가 함수로 등록될 때까지 대기
+            var scanCount = 0;
+            var readyScan = setInterval(function() {
+                scanCount++;
+                if (window.tvWidget && typeof window.tvWidget.onChartReady === 'function') {
+                    clearInterval(readyScan);
+                    console.log("🔍 onChartReady 확인 완료 (" + scanCount + "회 스캔)");
 
-                // 차트가 준비되기 전에 AI 응답이 도착한 경우 → 캐싱된 데이터 즉시 렌더링
-                if (window.pendingVisualData && window.tvChart) {
-                    console.log("📦 캐싱된 파동 데이터 렌더링 시작");
-                    renderShapes(window.tvChart, window.pendingVisualData);
-                    window.pendingVisualData = null;
+                    // 3단계: 차트 준비 완료 콜백 등록
+                    window.tvWidget.onChartReady(function() {
+                        var chart = null;
+                        try { chart = window.tvWidget.activeChart(); } catch(e) {}
+                        if (!chart) {
+                            try { chart = window.tvWidget.chart(); } catch(e) {}
+                        }
+                        window.tvChart = chart;
+                        console.log("✅ TradingView 차트 준비 완료 — 시각화 사용 가능");
+
+                        // 차트 준비 전 AI 응답이 먼저 도착한 경우 → 캐싱 데이터 즉시 렌더링
+                        if (window.pendingVisualData && window.tvChart) {
+                            console.log("📦 캐싱된 파동 데이터 렌더링 시작");
+                            renderShapes(window.tvChart, window.pendingVisualData);
+                            window.pendingVisualData = null;
+                        }
+                    });
+                } else if (scanCount > 40) {
+                    // 20초 초과 시 스캔 중단
+                    clearInterval(readyScan);
+                    console.warn("❌ TradingView 위젯 초기화 실패 (20초 초과)");
                 }
-            });
+            }, 500);
         }
 
         // 파동 시각화 진입점
@@ -343,6 +357,11 @@
     const input = document.getElementById('ai-input');
     const history = document.getElementById('ai-chat-history');
     if (!input.value.trim()) return;
+
+    // 위젯 안전 체크 — 에러 방지 (시각화는 pendingVisualData로 대기)
+    if (!window.tvWidget) {
+        console.warn("⚠️ tvWidget 미초기화 상태 — 시각화는 차트 로드 후 자동 렌더링됩니다.");
+    }
 
     // 1. 사용자 메시지 출력 및 입력창 비활성화
     const userText = input.value.trim();
