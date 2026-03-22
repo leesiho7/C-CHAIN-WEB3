@@ -65,9 +65,12 @@ public class AiAnalysisController {
                 response.put("answer", reason);
                 response.put("status", decision);
 
-                // [핵심] 시각화 좌표(visual_data)가 있다면 visualData 키로 프론트에 전달
-                if (aiResult.containsKey("visual_data")) {
+                // [핵심] 시각화 좌표가 있다면 프론트에 전달 (Python이 visualData 키로 반환)
+                if (aiResult.containsKey("visualData")) {
                     log.info("📊 시각화 좌표 수집 완료 -> 프론트엔드 전송");
+                    response.put("visualData", aiResult.get("visualData"));
+                } else if (aiResult.containsKey("visual_data")) {
+                    log.info("📊 시각화 좌표 수집 완료 (snake_case fallback) -> 프론트엔드 전송");
                     response.put("visualData", aiResult.get("visual_data"));
                 }
             } else {
