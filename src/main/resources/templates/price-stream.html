@@ -358,9 +358,13 @@
         loadingDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] shrink-0">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm leading-relaxed text-gray-200">${answer}</p>`;
 
         // 6. [시각화 렌더링] Chart.js 엘리어트 파동 패널 표시
-        if (data.visualData && data.visualData.points) {
-            console.log("📊 AI 시각화 데이터 수신:", data.visualData.points);
-            renderWaveChart(data.visualData.points);
+        const points = data.visualData?.points || (Array.isArray(data.visualData) ? data.visualData : null);
+        
+        if (points && points.length > 0) {
+            console.log("📊 AI 시각화 데이터 수신:", points);
+            renderWaveChart(points);
+        } else {
+            console.warn("⚠️ AI 시각화 데이터가 없거나 형식이 올바르지 않습니다:", data.visualData);
         }
 
     } catch (e) {
@@ -374,6 +378,12 @@
 }
         // 엔터키로 전송
         document.addEventListener('DOMContentLoaded', () => {
+            // Chart.js 플러그인 전역 등록 (Chart.js v4 대응)
+            if (typeof ChartDataLabels !== 'undefined') {
+                Chart.register(ChartDataLabels);
+                console.log("✅ ChartDataLabels 플러그인 등록 완료");
+            }
+            
             document.getElementById('ai-input').addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') askAI();
             });
