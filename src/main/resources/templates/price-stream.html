@@ -282,40 +282,67 @@
             });
         }
 
-        // 파동 시각화 렌더링 함수 — 차트 미준비 시 0.5초 간격 최대 10회 재시도
+        // 파동 시각화 렌더링 함수
+        // onChartReady 콜백에만 의존하지 않고 tvWidget.chart() 직접 폴링
         function drawWaveShapes(points, attempt) {
             attempt = attempt || 0;
 
-            if (!window.tvChart) {
-                if (attempt < 10) {
-                    console.log("⏳ 차트 미준비 — " + (attempt + 1) + "번째 재시도 대기 중...");
+            // 1. window.tvWidget.chart() 직접 접근 시도 (try-catch로 안전하게)
+            var chart = null;
+            try {
+                if (window.tvWidget && typeof window.tvWidget.chart === 'function') {
+                    chart = window.tvWidget.chart();
+                }
+            } catch (e) {
+                chart = null;
+            }
+
+            // 2. onChartReady 콜백으로 저장된 tvChart도 병행 확인
+            if (!chart && window.tvChart) {
+                chart = window.tvChart;
+            }
+
+            // 3. 차트 객체 미확보 → 최대 20회(10초) 재시도
+            if (!chart) {
+                if (attempt < 20) {
+                    console.log("⏳ 차트 객체 대기 중... (" + (attempt + 1) + "/20)");
                     setTimeout(function() { drawWaveShapes(points, attempt + 1); }, 500);
                 } else {
-                    console.warn("❌ 차트 준비 시간 초과(5초) — 시각화 포기");
+                    console.warn("❌ 차트 객체 확보 실패(10초 초과) — 시각화 포기");
                 }
                 return;
             }
 
+            // 4. 차트 객체 확보 — 그리기 시작
+            console.log("🎯 차트 객체 확보 — 그리기 시작 (" + points.length + "개 좌표)");
+
             points.forEach(function(point) {
-                // Bybit ms(13자리) → TradingView s(10자리) 변환
-                var correctedTime = Math.floor(parseInt(point.timestamp) / 1000);
-                window.tvChart.createShape({
-                    time:  correctedTime,
-                    price: parseFloat(point.price)
-                }, {
-                    shape:           point.type === 'high' ? 'arrow_down' : 'arrow_up',
-                    text:            point.label + "파",
-                    lock:            true,
-                    disableSelection: true,
-                    overrides: {
-                        color:      point.type === 'high' ? "#FF9800" : "#2196F3",
-                        textcolor:  "#ffffff",
-                        fontsize:   12,
-                        fontweight: "bold",
-                        placetext:  point.type === 'high' ? "above" : "below"
-                    }
-                });
+                // Bybit ms(13자리, 171xxxxxxxxxx) → TradingView s(10자리) 변환
+                var ts = parseInt(point.timestamp);
+                var correctedTime = ts > 9999999999 ? Math.floor(ts / 1000) : ts;
+
+                try {
+                    chart.createShape({
+                        time:  correctedTime,
+                        price: parseFloat(point.price)
+                    }, {
+                        shape:            point.type === 'high' ? 'arrow_down' : 'arrow_up',
+                        text:             point.label + "파",
+                        lock:             true,
+                        disableSelection: true,
+                        overrides: {
+                            color:      point.type === 'high' ? "#FF9800" : "#2196F3",
+                            textcolor:  "#ffffff",
+                            fontsize:   12,
+                            fontweight: "bold",
+                            placetext:  point.type === 'high' ? "above" : "below"
+                        }
+                    });
+                } catch (e) {
+                    console.warn("⚠️ createShape 실패 (point: " + JSON.stringify(point) + "):", e.message);
+                }
             });
+
             console.log("✅ 파동 시각화 렌더링 완료 — " + points.length + "개 좌표");
         }
 
