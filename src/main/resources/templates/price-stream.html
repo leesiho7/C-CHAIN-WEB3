@@ -10,6 +10,7 @@
     
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
     <style>
         * { font-family: 'Pretendard', sans-serif; }
@@ -132,6 +133,22 @@
         </div>
     </main>
 
+    <!-- 엘리어트 파동 시각화 패널 (AI 응답 시 표시) -->
+    <div id="wave-panel" class="hidden max-w-7xl mx-auto px-8 pb-8">
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-wave-square text-blue-600"></i> 엘리어트 파동 분석
+                </h3>
+                <button onclick="document.getElementById('wave-panel').classList.add('hidden')"
+                        class="text-gray-400 hover:text-gray-600 text-sm px-3 py-1 rounded-lg hover:bg-gray-100 transition">
+                    <i class="fa-solid fa-xmark"></i> 닫기
+                </button>
+            </div>
+            <div style="height: 280px;"><canvas id="waveChart"></canvas></div>
+        </div>
+    </div>
+
     <div id="alert-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3"></div>
 
     <!-- Bot Arena 진입 버튼 (작고 눈에 안 띄게) -->
@@ -241,10 +258,8 @@
     </div>
 
     <script>
-        // 전역 TradingView 참조 — 명시적 초기화
-        window.tvWidget         = null;
-        window.tvChart          = null;   // onChartReady 이후 확정
-        window.pendingVisualData = null;  // 차트 미준비 시 데이터 캐싱
+        // TradingView 위젯 참조
+        window.tvWidget = null;
 
         // Bybit 심볼 매핑
         const SYMBOL_MAP = { 'BTCUSDT': 'BTC', 'ETHUSDT': 'ETH', 'SOLUSDT': 'SOL' };
@@ -258,35 +273,6 @@
         let updateCount = 0;
         let ws = null;
         let reconnectTimer = null;
-
-        // 실제 createShape 실행 함수
-        function renderShapes(chart, points) {
-            points.forEach(function(point) {
-                // ms(13자리) → s(10자리) 정수 변환
-                var correctedTime = Math.floor(Number(point.timestamp) / 1000);
-                try {
-                    chart.createShape(
-                        { time: correctedTime, price: parseFloat(point.price) },
-                        {
-                            shape:            point.type === 'high' ? 'arrow_down' : 'arrow_up',
-                            text:             point.label + "파",
-                            lock:             true,
-                            disableSelection: true,
-                            overrides: {
-                                color:      point.type === 'high' ? "#FF9800" : "#2196F3",
-                                textcolor:  "#ffffff",
-                                fontsize:   12,
-                                fontweight: "bold",
-                                placetext:  point.type === 'high' ? "above" : "below"
-                            }
-                        }
-                    );
-                } catch(e) {
-                    console.warn("⚠️ createShape 실패:", point, e.message);
-                }
-            });
-            console.log("✅ 파동 시각화 렌더링 완료 — " + points.length + "개 좌표");
-        }
 
         // 트레이딩뷰 초기화
         function initTradingView() {
@@ -307,49 +293,6 @@
                 "studies": ["MAExp@tv-basicstudies", "RSI@tv-basicstudies"]
             });
 
-            // 2단계: Ready 스캔 — onChartReady가 함수로 등록될 때까지 대기
-            var scanCount = 0;
-            var readyScan = setInterval(function() {
-                scanCount++;
-                if (window.tvWidget && typeof window.tvWidget.onChartReady === 'function') {
-                    clearInterval(readyScan);
-                    console.log("🔍 onChartReady 확인 완료 (" + scanCount + "회 스캔)");
-
-                    // 3단계: 차트 준비 완료 콜백 등록
-                    window.tvWidget.onChartReady(function() {
-                        var chart = null;
-                        try { chart = window.tvWidget.activeChart(); } catch(e) {}
-                        if (!chart) {
-                            try { chart = window.tvWidget.chart(); } catch(e) {}
-                        }
-                        window.tvChart = chart;
-                        console.log("✅ TradingView 차트 준비 완료 — 시각화 사용 가능");
-
-                        // 차트 준비 전 AI 응답이 먼저 도착한 경우 → 캐싱 데이터 즉시 렌더링
-                        if (window.pendingVisualData && window.tvChart) {
-                            console.log("📦 캐싱된 파동 데이터 렌더링 시작");
-                            renderShapes(window.tvChart, window.pendingVisualData);
-                            window.pendingVisualData = null;
-                        }
-                    });
-                } else if (scanCount > 40) {
-                    // 20초 초과 시 스캔 중단
-                    clearInterval(readyScan);
-                    console.warn("❌ TradingView 위젯 초기화 실패 (20초 초과)");
-                }
-            }, 500);
-        }
-
-        // 파동 시각화 진입점
-        // 차트 준비 완료 시 즉시 렌더링, 미준비 시 pendingVisualData에 캐싱
-        function drawWaveShapes(points) {
-            if (window.tvChart) {
-                console.log("🎯 차트 객체 확보 — 그리기 시작 (" + points.length + "개 좌표)");
-                renderShapes(window.tvChart, points);
-            } else {
-                console.log("📦 차트 미준비 — pendingVisualData에 캐싱. 차트 로드 완료 시 자동 렌더링.");
-                window.pendingVisualData = points;
-            }
         }
 
         // AI 에이전트 실제 호출
@@ -357,11 +300,6 @@
     const input = document.getElementById('ai-input');
     const history = document.getElementById('ai-chat-history');
     if (!input.value.trim()) return;
-
-    // 위젯 안전 체크 — 에러 방지 (시각화는 pendingVisualData로 대기)
-    if (!window.tvWidget) {
-        console.warn("⚠️ tvWidget 미초기화 상태 — 시각화는 차트 로드 후 자동 렌더링됩니다.");
-    }
 
     // 1. 사용자 메시지 출력 및 입력창 비활성화
     const userText = input.value.trim();
@@ -419,10 +357,10 @@
 
         loadingDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] shrink-0">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm leading-relaxed text-gray-200">${answer}</p>`;
 
-        // 6. [시각화 렌더링] TradingView 차트 위에 파동 좌표 그리기
+        // 6. [시각화 렌더링] Chart.js 엘리어트 파동 패널 표시
         if (data.visualData && data.visualData.points) {
             console.log("📊 AI 시각화 데이터 수신:", data.visualData.points);
-            drawWaveShapes(data.visualData.points);
+            renderWaveChart(data.visualData.points);
         }
 
     } catch (e) {
@@ -533,6 +471,103 @@
             connectBybitWS();
             initTradingView();
         });
+
+        // ── 엘리어트 파동 Chart.js 시각화 ────────────────────────────────
+        let waveChartInst = null;
+
+        function renderWaveChart(points) {
+            document.getElementById('wave-panel').classList.remove('hidden');
+
+            const sorted = [...points].sort((a, b) => a.timestamp - b.timestamp);
+            const highPts = sorted.filter(p => p.type === 'high').map(p => ({ x: p.timestamp, y: parseFloat(p.price), label: p.label }));
+            const lowPts  = sorted.filter(p => p.type === 'low').map(p => ({ x: p.timestamp, y: parseFloat(p.price), label: p.label }));
+            const linePts = sorted.map(p => ({ x: p.timestamp, y: parseFloat(p.price) }));
+
+            if (waveChartInst) waveChartInst.destroy();
+            waveChartInst = new Chart(document.getElementById('waveChart').getContext('2d'), {
+                type: 'scatter',
+                plugins: [ChartDataLabels],
+                data: {
+                    datasets: [
+                        {
+                            label: '고점 (Peak)',
+                            data: highPts,
+                            backgroundColor: '#FF9800',
+                            pointRadius: 8,
+                            pointHoverRadius: 10,
+                            showLine: false,
+                            datalabels: {
+                                color: '#FF9800',
+                                anchor: 'end',
+                                align: 'top',
+                                font: { weight: 'bold', size: 11 },
+                                formatter: v => v.label + '파'
+                            }
+                        },
+                        {
+                            label: '저점 (Trough)',
+                            data: lowPts,
+                            backgroundColor: '#2196F3',
+                            pointRadius: 8,
+                            pointHoverRadius: 10,
+                            showLine: false,
+                            datalabels: {
+                                color: '#2196F3',
+                                anchor: 'start',
+                                align: 'bottom',
+                                font: { weight: 'bold', size: 11 },
+                                formatter: v => v.label + '파'
+                            }
+                        },
+                        {
+                            label: '파동 연결선',
+                            data: linePts,
+                            borderColor: 'rgba(100,116,139,0.35)',
+                            borderWidth: 1.5,
+                            borderDash: [4, 4],
+                            pointRadius: 0,
+                            showLine: true,
+                            fill: false,
+                            datalabels: { display: false }
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, labels: { usePointStyle: true, font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                title: items => new Date(items[0].raw.x).toLocaleString('ko-KR'),
+                                label: item => {
+                                    const lbl = item.raw.label ? ` [${item.raw.label}파]` : '';
+                                    return ` $${parseFloat(item.raw.y).toLocaleString()}${lbl}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            ticks: {
+                                callback: v => { const d = new Date(v); return `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}시`; },
+                                maxTicksLimit: 6,
+                                font: { size: 10 }
+                            },
+                            grid: { color: '#f1f5f9' }
+                        },
+                        y: {
+                            ticks: {
+                                callback: v => '$' + v.toLocaleString(),
+                                font: { size: 10 }
+                            },
+                            grid: { color: '#f1f5f9' }
+                        }
+                    }
+                }
+            });
+        }
 
         // ── Bot Arena ────────────────────────────────────────────────
         let baChart = null;
