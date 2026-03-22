@@ -483,90 +483,107 @@
             const lowPts  = sorted.filter(p => p.type === 'low').map(p => ({ x: p.timestamp, y: parseFloat(p.price), label: p.label }));
             const linePts = sorted.map(p => ({ x: p.timestamp, y: parseFloat(p.price) }));
 
-            if (waveChartInst) waveChartInst.destroy();
-            waveChartInst = new Chart(document.getElementById('waveChart').getContext('2d'), {
-                type: 'scatter',
-                plugins: [ChartDataLabels],
-                data: {
-                    datasets: [
-                        {
-                            label: '고점 (Peak)',
-                            data: highPts,
-                            backgroundColor: '#FF9800',
-                            pointRadius: 8,
-                            pointHoverRadius: 10,
-                            showLine: false,
-                            datalabels: {
-                                color: '#FF9800',
-                                anchor: 'end',
-                                align: 'top',
-                                font: { weight: 'bold', size: 11 },
-                                formatter: v => v.label + '파'
+            const ctx = document.getElementById('waveChart').getContext('2d');
+
+            if (waveChartInst) {
+                // 기존 차트가 있으면 데이터만 업데이트하고 update() 호출
+                waveChartInst.data.datasets[0].data = highPts;
+                waveChartInst.data.datasets[1].data = lowPts;
+                waveChartInst.data.datasets[2].data = linePts;
+                waveChartInst.update();
+            } else {
+                // 차트가 없으면 새로 생성
+                waveChartInst = new Chart(ctx, {
+                    type: 'scatter',
+                    plugins: [ChartDataLabels],
+                    data: {
+                        datasets: [
+                            {
+                                label: '고점 (High)',
+                                data: highPts,
+                                backgroundColor: '#F97316', // 주황색
+                                pointRadius: 7,
+                                pointHoverRadius: 9,
+                                showLine: false,
+                                datalabels: {
+                                    color: '#F97316',
+                                    anchor: 'end',
+                                    align: 'top',
+                                    font: { weight: 'bold', size: 12 },
+                                    formatter: v => v.label + '파'
+                                }
+                            },
+                            {
+                                label: '저점 (Low)',
+                                data: lowPts,
+                                backgroundColor: '#3B82F6', // 파란색
+                                pointRadius: 7,
+                                pointHoverRadius: 9,
+                                showLine: false,
+                                datalabels: {
+                                    color: '#3B82F6',
+                                    anchor: 'start',
+                                    align: 'bottom',
+                                    font: { weight: 'bold', size: 12 },
+                                    formatter: v => v.label + '파'
+                                }
+                            },
+                            {
+                                label: '지그재그 파동선',
+                                data: linePts,
+                                borderColor: 'rgba(148, 163, 184, 0.6)', // 차분한 슬레이트 블루
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                showLine: true,
+                                fill: false,
+                                tension: 0, // 완전한 지그재그를 위해 tension 0
+                                datalabels: { display: false }
                             }
-                        },
-                        {
-                            label: '저점 (Trough)',
-                            data: lowPts,
-                            backgroundColor: '#2196F3',
-                            pointRadius: 8,
-                            pointHoverRadius: 10,
-                            showLine: false,
-                            datalabels: {
-                                color: '#2196F3',
-                                anchor: 'start',
-                                align: 'bottom',
-                                font: { weight: 'bold', size: 11 },
-                                formatter: v => v.label + '파'
-                            }
-                        },
-                        {
-                            label: '파동 연결선',
-                            data: linePts,
-                            borderColor: 'rgba(100,116,139,0.35)',
-                            borderWidth: 1.5,
-                            borderDash: [4, 4],
-                            pointRadius: 0,
-                            showLine: true,
-                            fill: false,
-                            datalabels: { display: false }
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, labels: { usePointStyle: true, font: { size: 11 } } },
-                        tooltip: {
-                            callbacks: {
-                                title: items => new Date(items[0].raw.x).toLocaleString('ko-KR'),
-                                label: item => {
-                                    const lbl = item.raw.label ? ` [${item.raw.label}파]` : '';
-                                    return ` $${parseFloat(item.raw.y).toLocaleString()}${lbl}`;
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { display: true, labels: { usePointStyle: true, font: { size: 11 } } },
+                            tooltip: {
+                                callbacks: {
+                                    title: items => {
+                                        const d = new Date(items[0].raw.x);
+                                        return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+                                    },
+                                    label: item => {
+                                        const lbl = item.raw.label ? ` [${item.raw.label}파]` : '';
+                                        return ` 가격: $${parseFloat(item.raw.y).toLocaleString()}${lbl}`;
+                                    }
                                 }
                             }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            type: 'linear',
-                            ticks: {
-                                callback: v => { const d = new Date(v); return `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}시`; },
-                                maxTicksLimit: 6,
-                                font: { size: 10 }
-                            },
-                            grid: { color: '#f1f5f9' }
                         },
-                        y: {
-                            ticks: {
-                                callback: v => '$' + v.toLocaleString(),
-                                font: { size: 10 }
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                ticks: {
+                                    callback: v => {
+                                        const d = new Date(v);
+                                        return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
+                                    },
+                                    maxTicksLimit: 8,
+                                    font: { size: 10 }
+                                },
+                                grid: { color: 'rgba(241, 245, 249, 0.5)' }
                             },
-                            grid: { color: '#f1f5f9' }
+                            y: {
+                                ticks: {
+                                    callback: v => '$' + v.toLocaleString(),
+                                    font: { size: 10 }
+                                },
+                                grid: { color: 'rgba(241, 245, 249, 0.5)' }
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
         }
 
         // ── Bot Arena ────────────────────────────────────────────────
