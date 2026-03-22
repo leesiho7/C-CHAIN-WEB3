@@ -486,26 +486,27 @@
         let waveChartInst = null;
 
         function renderWaveChart(points) {
-            document.getElementById('wave-panel').classList.remove('hidden');
+            const panel = document.getElementById('wave-panel');
+            panel.classList.remove('hidden');
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             const sorted = [...points].sort((a, b) => a.timestamp - b.timestamp);
             const highPts = sorted.filter(p => p.type === 'high').map(p => ({ x: p.timestamp, y: parseFloat(p.price), label: p.label }));
             const lowPts  = sorted.filter(p => p.type === 'low').map(p => ({ x: p.timestamp, y: parseFloat(p.price), label: p.label }));
             const linePts = sorted.map(p => ({ x: p.timestamp, y: parseFloat(p.price) }));
 
-            const ctx = document.getElementById('waveChart').getContext('2d');
-
             if (waveChartInst) {
-                // 기존 차트가 있으면 데이터만 업데이트하고 update() 호출
+                // 기존 차트가 있으면 데이터만 업데이트
                 waveChartInst.data.datasets[0].data = highPts;
                 waveChartInst.data.datasets[1].data = lowPts;
                 waveChartInst.data.datasets[2].data = linePts;
                 waveChartInst.update();
             } else {
-                // 차트가 없으면 새로 생성
+                // display:none → block 전환 후 canvas 크기가 확정될 때까지 대기
+                requestAnimationFrame(() => {
+                const ctx = document.getElementById('waveChart').getContext('2d');
                 waveChartInst = new Chart(ctx, {
                     type: 'scatter',
-                    plugins: [ChartDataLabels],
                     data: {
                         datasets: [
                             {
@@ -593,6 +594,7 @@
                         }
                     }
                 });
+                }); // requestAnimationFrame
             }
         }
 
