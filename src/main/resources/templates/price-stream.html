@@ -274,109 +274,117 @@
         }
 
      // AI 에이전트 실제 호출
-        async function askAI() {
-            const input = document.getElementById('ai-input');
-            const history = document.getElementById('ai-chat-history');
-            if (!input.value.trim()) return;
+        // AI 에이전트 실제 호출
+async function askAI() {
+    const input = document.getElementById('ai-input');
+    const history = document.getElementById('ai-chat-history');
+    if (!input.value.trim()) return;
 
-            // 1. 사용자 메시지 출력 및 입력창 비활성화
-            const userText = input.value.trim();
-            input.value = '';
-            input.disabled = true;
+    // 1. 사용자 메시지 출력 및 입력창 비활성화
+    const userText = input.value.trim();
+    input.value = '';
+    input.disabled = true;
 
-            const userDiv = document.createElement('div');
-            userDiv.className = 'flex justify-end';
-            userDiv.innerHTML = `<p class="bg-blue-600 p-3 rounded-2xl rounded-tr-none max-w-[80%] text-sm">${userText.replace(/</g, '&lt;')}</p>`;
-            history.appendChild(userDiv);
-            history.scrollTop = history.scrollHeight;
+    const userDiv = document.createElement('div');
+    userDiv.className = 'flex justify-end';
+    userDiv.innerHTML = `<p class="bg-blue-600 p-3 rounded-2xl rounded-tr-none max-w-[80%] text-sm">${userText.replace(/</g, '&lt;')}</p>`;
+    history.appendChild(userDiv);
+    history.scrollTop = history.scrollHeight;
 
-            // 2. 로딩 메시지 출력
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'flex gap-2';
-            loadingDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] shrink-0">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm text-gray-400 italic animate-pulse">HTF 거시 추세 및 파동 좌표 분석 중...</p>`;
-            history.appendChild(loadingDiv);
-            history.scrollTop = history.scrollHeight;
+    // 2. 로딩 메시지 출력
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'flex gap-2';
+    loadingDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] shrink-0">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm text-gray-400 italic animate-pulse">HTF 거시 추세 및 파동 좌표 분석 중...</p>`;
+    history.appendChild(loadingDiv);
+    history.scrollTop = history.scrollHeight;
 
-            try {
-                // 3. Bybit 데이터 조회 (거시 분석을 위해 limit을 100으로 상향)
-                const klineRes = await fetch('https://api.bybit.com/v5/market/kline?category=spot&symbol=BTCUSDT&interval=60&limit=100');
-                const klineJson = await klineRes.json();
-                const rawList = klineJson.result?.list ?? [];
+    try {
+        // 3. Bybit 데이터 조회 (거시 분석을 위해 limit을 100으로 상향 유지)
+        const klineRes = await fetch('https://api.bybit.com/v5/market/kline?category=spot&symbol=BTCUSDT&interval=60&limit=100');
+        const klineJson = await klineRes.json();
+        const rawList = klineJson.result?.list ?? [];
+        
+        const candleData = JSON.stringify(rawList.map(c => ({
+            timestamp: parseInt(c[0]),
+            open:      c[1],
+            high:      c[2],
+            low:       c[3],
+            close:     c[4],
+            volume:    c[5],
+            turnover:  c[6]
+        })));
+
+        // 4. Java 백엔드 호출 (실시간 btcPrice 포함)
+        const res = await fetch('/api/ai/quant-analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                symbol: 'BTCUSDT',
+                btcPrice: prices.BTC.price, // 전역 객체 prices의 실시간 가격 사용
+                candleData: candleData,
+                question: userText
+            })
+        });
+
+        const data = await res.json();
+        
+        // 5. 텍스트 분석 리포트 출력
+        const answer = (data.answer || '응답 없음')
+            .replace(/</g, '&lt;')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+
+        loadingDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] shrink-0">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm leading-relaxed text-gray-200">${answer}</p>`;
+
+        // 6. [시각화 렌더링] TradingView 차트 위에 파동 좌표 그리기
+        if (data.visualData && data.visualData.points) {
+            console.log("📊 AI 시각화 데이터 수신:", data.visualData.points);
+            
+            // window.tvWidget 또는 기존 코드에서 선언한 위젯 객체 확인
+            const widget = window.tvWidget; 
+            
+            if (widget && typeof widget.chart === 'function') {
+                const chart = widget.chart();
                 
-                const candleData = JSON.stringify(rawList.map(c => ({
-                    timestamp: parseInt(c[0]),
-                    open:      c[1],
-                    high:      c[2],
-                    low:       c[3],
-                    close:     c[4],
-                    volume:    c[5],
-                    turnover:  c[6]
-                })));
+                // 기존 마커 제거 (새 분석 시 이전 마커와 겹침 방지)
+                // chart.removeAllShapes(); 
 
-                // 4. Java 백엔드 호출 (Python AI 에이전트 연동)
-                const res = await fetch('/api/ai/quant-analyze', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        symbol: 'BTCUSDT',
-                        btcPrice: prices.BTC.price,
-                        candleData: candleData,
-                        question: userText
-                    })
-                });
-
-                const data = await res.json();
-                
-                // 5. 텍스트 분석 리포트 출력
-                const answer = (data.answer || '응답 없음')
-                    .replace(/</g, '&lt;')
-                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\n/g, '<br>');
-
-                loadingDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] shrink-0">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm leading-relaxed">${answer}</p>`;
-
-                // 6. [핵심] TradingView 차트 위에 시각화 좌표(visualData) 그리기
-                if (data.visualData && data.visualData.points && typeof TradingView !== 'undefined') {
-                    console.log("📊 차트 오버레이 데이터 적용:", data.visualData.points);
+                data.visualData.points.forEach(point => {
+                    // [핵심] Bybit(ms)를 TV(s) 단위로 변환
+                    const correctedTime = Math.floor(parseInt(point.timestamp) / 1000);
                     
-                    // TV 위젯의 차트 객체 접근 (initTradingView에서 생성한 위젯 변수명이 tvWidget이어야 함)
-                    if (window.tvWidget && window.tvWidget.chart) {
-                        const chart = window.tvWidget.chart();
-                        
-                        // 기존에 AI가 그렸던 도형들을 지우고 싶다면 아래 주석 해제 (깔끔함 유지)
-                        // chart.removeAllShapes();
-
-                        data.visualData.points.forEach(point => {
-                            chart.createShape({
-                                time: parseInt(point.timestamp) / 1000, // Bybit ms -> TV s 변환
-                                price: parseFloat(point.price)
-                            }, {
-                                shape: point.type === 'high' ? 'arrow_down' : 'arrow_up',
-                                text: point.label + "파",
-                                lock: true,
-                                disableSelection: true,
-                                overrides: {
-                                    color: point.type === 'high' ? "#FF9800" : "#2196F3", // 주황(고), 파랑(저)
-                                    textcolor: "#ffffff",
-                                    fontsize: 12,
-                                    fontweight: "bold",
-                                    placetext: point.type === 'high' ? "above" : "below"
-                                }
-                            });
-                        });
-                    }
-                }
-
-            } catch (e) {
-                console.error("❌ 분석 중 오류:", e);
-                loadingDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center text-[10px] shrink-0">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm text-red-400">데이터 노드 연결 실패. 잠시 후 다시 시도해주세요.</p>`;
-            } finally {
-                input.disabled = false;
-                input.focus();
-                history.scrollTop = history.scrollHeight;
+                    chart.createShape({
+                        time: correctedTime,
+                        price: parseFloat(point.price)
+                    }, {
+                        shape: point.type === 'high' ? 'arrow_down' : 'arrow_up',
+                        text: point.label + "파",
+                        lock: true,
+                        disableSelection: true,
+                        overrides: {
+                            color: point.type === 'high' ? "#FF9800" : "#2196F3", // 주황(고), 파랑(저)
+                            textcolor: "#ffffff",
+                            fontsize: 12,
+                            fontweight: "bold",
+                            placetext: point.type === 'high' ? "above" : "below"
+                        }
+                    });
+                });
+                console.log("✅ 차트 오버레이 성공");
+            } else {
+                console.warn("⚠️ 트레이딩뷰 위젯 객체를 찾을 수 없어 시각화를 건너뜁니다.");
             }
         }
 
+    } catch (e) {
+        console.error("❌ 분석 중 오류:", e);
+        loadingDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center text-[10px] shrink-0">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm text-red-400">데이터 노드 연결 실패. 다시 시도해 주세요.</p>`;
+    } finally {
+        input.disabled = false;
+        input.focus();
+        history.scrollTop = history.scrollHeight;
+    }
+}
         // 엔터키로 전송
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('ai-input').addEventListener('keydown', (e) => {
