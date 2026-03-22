@@ -254,9 +254,9 @@
         let ws = null;
         let reconnectTimer = null;
 
-        // 트레이딩뷰 초기화
+        // 트레이딩뷰 초기화 — window.tvWidget에 저장해야 askAI에서 접근 가능
         function initTradingView() {
-            new TradingView.widget({
+            window.tvWidget = new TradingView.widget({
                 "container_id": "tradingview_widget",
                 "autosize": true,
                 "symbol": "BYBIT:BTCUSDT",
@@ -273,9 +273,8 @@
             });
         }
 
-     // AI 에이전트 실제 호출
         // AI 에이전트 실제 호출
-async function askAI() {
+        async function askAI() {
     const input = document.getElementById('ai-input');
     const history = document.getElementById('ai-chat-history');
     if (!input.value.trim()) return;
