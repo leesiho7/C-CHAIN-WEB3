@@ -12,26 +12,89 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <style>
-        /* (기존 스타일 유지) */
         * { font-family: 'Pretendard', sans-serif; }
-        body { background: linear-gradient(to bottom right, #f9fafb, #dbeafe, #fef3c7); min-height: 100vh; }
+        body {
+            background: linear-gradient(to bottom right, #f9fafb, #dbeafe, #fef3c7);
+            min-height: 100vh;
+        }
         .price-up { animation: flash-green 0.8s ease; }
         .price-down { animation: flash-red 0.8s ease; }
-        @keyframes flash-green { 0%, 100% { background-color: white; } 50% { background-color: rgba(34, 197, 94, 0.1); } }
-        @keyframes flash-red { 0%, 100% { background-color: white; } 50% { background-color: rgba(239, 68, 68, 0.1); } }
+        @keyframes flash-green {
+            0%, 100% { background-color: white; }
+            50% { background-color: rgba(34, 197, 94, 0.1); }
+        }
+        @keyframes flash-red {
+            0%, 100% { background-color: white; }
+            50% { background-color: rgba(239, 68, 68, 0.1); }
+        }
+        /* 스크롤바 숨기기 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Bot Arena 드로어 */
         #bot-arena-drawer { transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.32,0.72,0,1); }
         #bot-arena-drawer.open { transform: translateY(0); }
+        .ba-indicator-btn { background:#fff; border:1px solid #e2e8f0; color:#64748b; transition:all 0.2s; }
+        .ba-indicator-btn.active { background:#2563eb; color:#fff; border-color:#2563eb; }
+        .ba-slider::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; background:#2563eb; border-radius:50%; cursor:pointer; }
+        .ba-slider { -webkit-appearance:none; height:5px; background:#cbd5e1; border-radius:5px; width:100%; }
     </style>
 </head>
 <body>
+    <header class="bg-white border-b px-6 py-4 sticky top-0 z-50 shadow-sm">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-6">
+                <a href="/main" class="flex items-center space-x-2 text-blue-600">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 105.656-5.656l-1.1 1.1"></path></svg>
+                    <span class="text-2xl font-bold">C-Chain</span>
+                </a>
+                <span class="text-gray-400">|</span>
+                <nav class="flex items-center gap-4">
+                    <a href="/main" class="px-4 py-2 rounded-lg text-sm transition text-gray-600 hover:bg-gray-50 font-semibold">대시보드</a>
+                    <a href="/indexer" class="px-4 py-2 rounded-lg text-sm transition text-gray-600 hover:bg-gray-50 font-semibold">트랜잭션 인덱서</a>
+                    <a href="/exchange" class="px-4 py-2 rounded-lg text-sm transition text-gray-600 hover:bg-gray-50 font-semibold">지갑 &amp; 거래소</a>
+                    <a href="/price" class="px-4 py-2 rounded-lg text-sm transition bg-blue-50 text-blue-600 font-semibold">실시간 가격</a>
+                    <a href="/wallet-server" class="px-4 py-2 rounded-lg text-sm transition text-gray-600 hover:bg-gray-50 font-semibold">지갑 서버</a>
+                </nav>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="text-right mr-4">
+                    <p class="text-xs text-gray-400 font-bold uppercase">My Rewards</p>
+                    <p class="text-sm text-blue-600 font-bold" id="top-balance">-- OMT</p>
+                </div>
+                <div th:if="${session.loginMember == null}" class="flex items-center gap-2">
+                    <a href="/join" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-50 transition">회원가입</a>
+                    <a href="/login" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition shadow-md">
+                        <i class="fa-solid fa-right-to-bracket text-xs"></i> 로그인
+                    </a>
+                </div>
+                <div th:if="${session.loginMember != null}" class="flex items-center gap-2">
+                    <button onclick="location.href='/mypage'" class="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-black transition">마이페이지</button>
+                    <button onclick="location.href='/logout'" class="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 transition">로그아웃</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
     <main class="p-8">
         <div class="max-w-7xl mx-auto">
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 italic">Live Price Stream</h1>
+                    <p class="text-gray-500 mt-1">실시간 가격 변동 및 마켓 알림을 확인하세요.</p>
+                </div>
+                <div class="bg-white px-5 py-2.5 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-3">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-sm font-bold text-gray-600 uppercase tracking-tighter">Updates: <span id="update-count" class="text-blue-600">0</span></span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="price-cards"></div>
+
             <div class="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 h-[550px] flex flex-col">
                     <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-chart-line text-blue-600"></i> 실시간 기술적 분석 & AI 오버레이
+                        <i class="fa-solid fa-chart-line text-blue-600"></i> 실시간 기술적 분석 (BTC/USDT)
                     </h3>
                     <div id="tradingview_widget" class="flex-1 rounded-2xl overflow-hidden border border-gray-50"></div>
                 </div>
@@ -43,16 +106,23 @@
                         </div>
                         <div>
                             <h3 class="font-bold">Dober AI Agent</h3>
-                            <p class="text-[10px] text-blue-300 uppercase tracking-widest font-bold">Strategy: Visual Elliottwave Scan</p>
+                            <p class="text-[10px] text-blue-300 uppercase tracking-widest font-bold">Strategy: Eliottwave & Shortspeciallist</p>
                         </div>
                     </div>
                     
                     <div id="ai-chat-history" class="flex-1 overflow-y-auto text-sm space-y-4 mb-4 pr-2 no-scrollbar">
+                        <div class="flex gap-2">
+                            <div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] shrink-0">AI</div>
+                            <p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none leading-relaxed text-gray-200">
+                                안녕하세요! 현재 비트코인의 엘리어트파동을 분석 중입니다. <br><br>
+                                <span class="text-blue-400 font-bold">"비트코인 파동을 분석해줘"</span>라고 입력해보세요.
+                            </p>
                         </div>
+                    </div>
 
                     <div class="relative">
                         <input type="text" id="ai-input" placeholder="분석 질문을 입력하세요..." 
-                               class="w-full bg-slate-800 border-none rounded-xl py-4 px-4 text-sm focus:ring-2 focus:ring-blue-500 text-white">
+                               class="w-full bg-slate-800 border-none rounded-xl py-4 px-4 text-sm focus:ring-2 focus:ring-blue-500 text-white placeholder:text-gray-500">
                         <button onclick="askAI()" class="absolute right-2 top-2 w-10 h-10 text-blue-500 hover:text-blue-400 transition-colors">
                             <i class="fa-solid fa-paper-plane text-lg"></i>
                         </button>
@@ -62,12 +132,131 @@
         </div>
     </main>
 
-    <script>
-        let tvWidget = null; // 트레이딩뷰 위젯 객체 저장용
+    <div id="alert-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3"></div>
 
-        // 1. 트레이딩뷰 초기화 (onChartReady 콜백 추가)
+    <!-- Bot Arena 진입 버튼 (작고 눈에 안 띄게) -->
+    <button id="bot-btn" onclick="toggleBotArena()"
+            class="fixed bottom-6 left-6 z-[99] w-11 h-11 bg-slate-800 hover:bg-slate-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all"
+            title="AI 전략 시뮬레이터">
+        <i class="fa-solid fa-robot text-sm"></i>
+    </button>
+
+    <!-- Bot Arena 슬라이드업 드로어 -->
+    <div id="bot-arena-backdrop" onclick="toggleBotArena()"
+         class="fixed inset-0 z-[97] bg-black/40 hidden"></div>
+    <div id="bot-arena-drawer"
+         class="fixed bottom-0 left-0 right-0 z-[98] bg-slate-50 rounded-t-3xl max-h-[88vh] overflow-y-auto shadow-2xl">
+        <div class="p-6">
+            <!-- 헤더 -->
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-bar text-blue-600"></i> AI 전략 시뮬레이터
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">백테스팅 기반 자동매매 전략 분석</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="alert('봇 연동 기능은 준비 중입니다.')"
+                            class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow transition">
+                        <i class="fa-solid fa-bolt"></i> 봇 연동하기
+                    </button>
+                    <button onclick="toggleBotArena()" class="text-slate-400 hover:text-slate-700 text-xl">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 왼쪽: 전략 설정 -->
+                <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                    <h3 class="font-bold text-slate-700 mb-4 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-blue-500"></i> 전략 설정
+                    </h3>
+                    <div class="mb-4">
+                        <p class="text-xs font-semibold text-slate-400 mb-2">기술적 지표</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="baToggle('rsi')" id="ba-btn-rsi" class="ba-indicator-btn active text-xs px-3 py-2 rounded-lg font-semibold">RSI</button>
+                            <button onclick="baToggle('bollinger')" id="ba-btn-bollinger" class="ba-indicator-btn text-xs px-3 py-2 rounded-lg font-semibold">Bollinger</button>
+                            <button onclick="baToggle('regression')" id="ba-btn-regression" class="ba-indicator-btn active text-xs px-3 py-2 rounded-lg font-semibold">Linear Reg</button>
+                            <button onclick="baToggle('macd')" id="ba-btn-macd" class="ba-indicator-btn text-xs px-3 py-2 rounded-lg font-semibold">MACD</button>
+                        </div>
+                    </div>
+                    <div class="space-y-3 mb-4">
+                        <p class="text-xs font-semibold text-slate-400">RSI 기간</p>
+                        <div class="flex justify-between text-xs mb-1"><span class="text-slate-500">Period</span><span class="text-blue-600 font-bold" id="ba-rsi-val">14</span></div>
+                        <input type="range" min="7" max="30" value="14" class="ba-slider" oninput="document.getElementById('ba-rsi-val').innerText=this.value">
+                        <p class="text-xs font-semibold text-slate-400 mt-2">손절 %</p>
+                        <div class="flex justify-between text-xs mb-1"><span class="text-slate-500">Stop Loss</span><span class="text-red-500 font-bold" id="ba-sl-val">5</span></div>
+                        <input type="range" min="1" max="15" value="5" class="ba-slider" oninput="document.getElementById('ba-sl-val').innerText=this.value">
+                        <p class="text-xs font-semibold text-slate-400 mt-2">포지션 크기 %</p>
+                        <div class="flex justify-between text-xs mb-1"><span class="text-slate-500">Position Size</span><span class="text-blue-600 font-bold" id="ba-ps-val">25</span></div>
+                        <input type="range" min="10" max="100" step="5" value="25" class="ba-slider" oninput="document.getElementById('ba-ps-val').innerText=this.value">
+                    </div>
+                    <button onclick="baRunBacktest()" class="w-full bg-slate-900 hover:bg-black text-white py-3 rounded-xl font-bold text-sm transition-all">
+                        백테스팅 실행
+                    </button>
+                </div>
+
+                <!-- 오른쪽: 결과 -->
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="grid grid-cols-4 gap-3">
+                        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">총 수익률</p>
+                            <p class="text-xl font-bold text-blue-600" id="ba-total-return">+0.00%</p>
+                        </div>
+                        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">최대 낙폭</p>
+                            <p class="text-xl font-bold text-red-500" id="ba-max-drawdown">0.00%</p>
+                        </div>
+                        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">승률</p>
+                            <p class="text-xl font-bold text-slate-800" id="ba-win-rate">0.0%</p>
+                        </div>
+                        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">총 거래</p>
+                            <p class="text-xl font-bold text-blue-500" id="ba-total-trades">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                        <p class="font-bold text-slate-700 text-sm mb-3">자산 성장 곡선 (Equity Curve)</p>
+                        <div style="height:220px"><canvas id="ba-equityChart"></canvas></div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                        <p class="font-bold text-slate-700 text-sm mb-3">최근 거래 내역</p>
+                        <table class="w-full text-xs">
+                            <thead><tr class="text-slate-400 border-b border-slate-100">
+                                <th class="text-left py-2 px-2">날짜</th>
+                                <th class="text-left py-2 px-2">유형</th>
+                                <th class="text-right py-2 px-2">진입가</th>
+                                <th class="text-right py-2 px-2">수익률</th>
+                            </tr></thead>
+                            <tbody id="ba-trade-log">
+                                <tr><td colspan="4" class="py-8 text-center text-slate-300">백테스팅을 실행하세요.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Bybit 심볼 매핑
+        const SYMBOL_MAP = { 'BTCUSDT': 'BTC', 'ETHUSDT': 'ETH', 'SOLUSDT': 'SOL' };
+        const prices = {
+            BTC: { symbol: 'BTC', name: 'Bitcoin', price: 0, change24h: 0, icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png', theme: 'from-[#F7931A] to-[#FFAB40]', exchange: 'Bybit LIVE' },
+            ETH: { symbol: 'ETH', name: 'Ethereum', price: 0, change24h: 0, icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png', theme: 'from-[#627EEA] to-[#8C9EFF]', exchange: 'Bybit LIVE' },
+            SOL: { symbol: 'SOL', name: 'Solana', price: 0, change24h: 0, icon: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/sol.png', theme: 'from-[#14F195] to-[#9945FF]', exchange: 'Bybit LIVE' },
+            OMT: { symbol: 'OMT', name: 'OMT Token', price: 1.0, change24h: 0, icon: 'https://cdn-icons-png.flaticon.com/512/7075/7075050.png', theme: 'from-blue-600 to-indigo-700', exchange: 'C-Chain' }
+        };
+
+        let updateCount = 0;
+        let ws = null;
+        let reconnectTimer = null;
+
+        // 트레이딩뷰 초기화
         function initTradingView() {
-            tvWidget = new TradingView.widget({
+            new TradingView.widget({
                 "container_id": "tradingview_widget",
                 "autosize": true,
                 "symbol": "BYBIT:BTCUSDT",
@@ -80,52 +269,57 @@
                 "enable_publishing": false,
                 "hide_side_toolbar": false,
                 "allow_symbol_change": true,
-                "studies": ["RSI@tv-basicstudies"],
-                "onChartReady": function() {
-                    console.log("✅ TradingView 차트 준비 완료");
-                }
+                "studies": ["MAExp@tv-basicstudies", "RSI@tv-basicstudies"]
             });
         }
 
-        // 2. [핵심] AI 분석 및 시각화 로직
+     // AI 에이전트 실제 호출
         async function askAI() {
             const input = document.getElementById('ai-input');
             const history = document.getElementById('ai-chat-history');
             if (!input.value.trim()) return;
 
+            // 1. 사용자 메시지 출력 및 입력창 비활성화
             const userText = input.value.trim();
             input.value = '';
-            
-            // 사용자 말풍선 추가
+            input.disabled = true;
+
             const userDiv = document.createElement('div');
             userDiv.className = 'flex justify-end';
-            userDiv.innerHTML = `<p class="bg-blue-600 p-3 rounded-2xl max-w-[80%]">${userText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`;
+            userDiv.innerHTML = `<p class="bg-blue-600 p-3 rounded-2xl rounded-tr-none max-w-[80%] text-sm">${userText.replace(/</g, '&lt;')}</p>`;
             history.appendChild(userDiv);
+            history.scrollTop = history.scrollHeight;
 
-            // 로딩 말풍선
+            // 2. 로딩 메시지 출력
             const loadingDiv = document.createElement('div');
             loadingDiv.className = 'flex gap-2';
-            loadingDiv.innerHTML = `<div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-[10px]">AI</div><p class="bg-slate-800 p-3 rounded-2xl italic animate-pulse">파동 데이터 시각화 중...</p>`;
+            loadingDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] shrink-0">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm text-gray-400 italic animate-pulse">HTF 거시 추세 및 파동 좌표 분석 중...</p>`;
             history.appendChild(loadingDiv);
             history.scrollTop = history.scrollHeight;
 
             try {
-                // Bybit 데이터 로드 (자바/파이썬에 전달용)
+                // 3. Bybit 데이터 조회 (거시 분석을 위해 limit을 100으로 상향)
                 const klineRes = await fetch('https://api.bybit.com/v5/market/kline?category=spot&symbol=BTCUSDT&interval=60&limit=100');
                 const klineJson = await klineRes.json();
                 const rawList = klineJson.result?.list ?? [];
+                
                 const candleData = JSON.stringify(rawList.map(c => ({
                     timestamp: parseInt(c[0]),
-                    open: c[1], high: c[2], low: c[3], close: c[4]
+                    open:      c[1],
+                    high:      c[2],
+                    low:       c[3],
+                    close:     c[4],
+                    volume:    c[5],
+                    turnover:  c[6]
                 })));
 
-                // Java 백엔드 호출
+                // 4. Java 백엔드 호출 (Python AI 에이전트 연동)
                 const res = await fetch('/api/ai/quant-analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         symbol: 'BTCUSDT',
-                        btcPrice: 0, // 실제 가격 연동 필요 시 주입
+                        btcPrice: prices.BTC.price,
                         candleData: candleData,
                         question: userText
                     })
@@ -133,47 +327,157 @@
 
                 const data = await res.json();
                 
-                // 3. AI 리포트 출력
-                const answer = (data.answer || '응답 없음').replace(/\n/g, '<br>');
-                loadingDiv.innerHTML = `<div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-[10px]">AI</div><p class="bg-slate-800 p-3 rounded-2xl">${answer}</p>`;
+                // 5. 텍스트 분석 리포트 출력
+                const answer = (data.answer || '응답 없음')
+                    .replace(/</g, '&lt;')
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br>');
 
-                // 4. [신규] 차트 시각화 오버레이 (TradingView Shapes/Labels)
-                if (data.visualData && data.visualData.points) {
-                    console.log("📊 시각화 좌표 적용 시작:", data.visualData.points);
+                loadingDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] shrink-0">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm leading-relaxed">${answer}</p>`;
+
+                // 6. [핵심] TradingView 차트 위에 시각화 좌표(visualData) 그리기
+                if (data.visualData && data.visualData.points && typeof TradingView !== 'undefined') {
+                    console.log("📊 차트 오버레이 데이터 적용:", data.visualData.points);
                     
-                    data.visualData.points.forEach(point => {
-                        // 차트 위에 텍스트 라벨(화살표 포함) 생성
-                        tvWidget.chart().createShape({
-                            time: parseInt(point.timestamp) / 1000, // TV는 초 단위 타임스탬프 사용
-                            price: parseFloat(point.price),
-                        }, {
-                            shape: point.type === 'high' ? 'arrow_down' : 'arrow_up',
-                            text: point.label + "파",
-                            lock: true,
-                            disableSelection: true,
-                            overrides: {
-                                color: point.type === 'high' ? "#ff9800" : "#2196f3",
-                                textcolor: "#ffffff",
-                                fontsize: 12,
-                                fontweight: "bold"
-                            }
+                    // TV 위젯의 차트 객체 접근 (initTradingView에서 생성한 위젯 변수명이 tvWidget이어야 함)
+                    if (window.tvWidget && window.tvWidget.chart) {
+                        const chart = window.tvWidget.chart();
+                        
+                        // 기존에 AI가 그렸던 도형들을 지우고 싶다면 아래 주석 해제 (깔끔함 유지)
+                        // chart.removeAllShapes();
+
+                        data.visualData.points.forEach(point => {
+                            chart.createShape({
+                                time: parseInt(point.timestamp) / 1000, // Bybit ms -> TV s 변환
+                                price: parseFloat(point.price)
+                            }, {
+                                shape: point.type === 'high' ? 'arrow_down' : 'arrow_up',
+                                text: point.label + "파",
+                                lock: true,
+                                disableSelection: true,
+                                overrides: {
+                                    color: point.type === 'high' ? "#FF9800" : "#2196F3", // 주황(고), 파랑(저)
+                                    textcolor: "#ffffff",
+                                    fontsize: 12,
+                                    fontweight: "bold",
+                                    placetext: point.type === 'high' ? "above" : "below"
+                                }
+                            });
                         });
-                    });
+                    }
                 }
 
             } catch (e) {
-                loadingDiv.innerHTML = `<p class="text-red-400">오류 발생: ${e.message}</p>`;
+                console.error("❌ 분석 중 오류:", e);
+                loadingDiv.innerHTML = `<div class="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center text-[10px] shrink-0">AI</div><p class="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm text-red-400">데이터 노드 연결 실패. 잠시 후 다시 시도해주세요.</p>`;
+            } finally {
+                input.disabled = false;
+                input.focus();
+                history.scrollTop = history.scrollHeight;
             }
-            history.scrollTop = history.scrollHeight;
         }
 
-        // 초기화 실행
+        // 엔터키로 전송
         document.addEventListener('DOMContentLoaded', () => {
-            initTradingView();
-            // (기존 WebSocket 및 카드 렌더링 함수 호출 코드 유지)
+            document.getElementById('ai-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') askAI();
+            });
         });
- 
-        // ── Bot Arena ────────────────────────────────────────────────---------------------------------------------------------------------------------------------------------------------------------------------
+
+        // 가격 알림
+        function showPriceAlert(symbol, change) {
+            const container = document.getElementById('alert-container');
+            const alert = document.createElement('div');
+            const color = change > 0 ? 'bg-green-600' : 'bg-red-600';
+            const icon  = change > 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
+            alert.className = `${color} text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 transform translate-y-10 opacity-0 transition-all duration-500 font-bold text-xs`;
+            alert.innerHTML = `<div class="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center"><i class="fa-solid ${icon}"></i></div><span>${symbol} ${change > 0 ? '+' : ''}${change.toFixed(2)}% 변동 감지</span>`;
+            container.appendChild(alert);
+            setTimeout(() => alert.classList.remove('translate-y-10', 'opacity-0'), 50);
+            setTimeout(() => { alert.classList.add('opacity-0', 'scale-90'); setTimeout(() => alert.remove(), 500); }, 3000);
+        }
+
+        // 카드 렌더링
+        function renderPriceCards() {
+            const container = document.getElementById('price-cards');
+            container.innerHTML = Object.values(prices).map(token => `
+                <div class="bg-white rounded-3xl border border-gray-100 shadow-sm transition-all duration-300 overflow-hidden group" data-symbol="${token.symbol}">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="w-14 h-14 bg-gradient-to-br ${token.theme} rounded-2xl flex items-center justify-center p-2.5 shadow-lg group-hover:rotate-6 transition-transform">
+                                <img src="${token.icon}" class="w-full h-full object-contain">
+                            </div>
+                            <div class="text-right">
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">${token.name}</p>
+                                <p class="text-2xl font-black text-gray-900">${token.symbol}</p>
+                            </div>
+                        </div>
+                        <div class="mb-6 text-center py-4 bg-gray-50 rounded-2xl border border-gray-100">
+                            <p class="text-3xl font-black text-gray-900 mb-1">
+                                ${token.price === 0 ? '<span class="text-gray-300 text-lg">연결 중...</span>' : '$' + token.price.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                            </p>
+                            <span class="text-xs font-bold ${token.change24h >= 0 ? 'text-green-500' : 'text-red-500'}">
+                                ${token.change24h >= 0 ? '▲' : '▼'} ${Math.abs(token.change24h).toFixed(2)}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // WebSocket 연결
+        function connectBybitWS() {
+            if (ws) ws.close();
+            ws = new WebSocket('wss://stream.bybit.com/v5/public/spot');
+            ws.onopen = () => {
+                ws.send(JSON.stringify({ op: 'subscribe', args: ['tickers.BTCUSDT', 'tickers.ETHUSDT', 'tickers.SOLUSDT'] }));
+            };
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                if (!msg.topic || !msg.data) return;
+                const key = SYMBOL_MAP[msg.data.symbol];
+                if (!key) return;
+
+                const newPrice   = parseFloat(msg.data.lastPrice);
+                const change24h  = parseFloat(msg.data.price24hPcnt) * 100;
+                const oldPrice   = prices[key].price;
+
+                if (oldPrice > 0 && Math.abs(((newPrice - oldPrice) / oldPrice) * 100) > 0.05) showPriceAlert(key, ((newPrice - oldPrice) / oldPrice) * 100);
+                if (oldPrice > 0 && oldPrice !== newPrice) {
+                    const card = document.querySelector(`[data-symbol="${key}"]`);
+                    if (card) {
+                        card.classList.remove('price-up', 'price-down');
+                        void card.offsetWidth;
+                        card.classList.add(newPrice > oldPrice ? 'price-up' : 'price-down');
+                    }
+                }
+                prices[key].price = newPrice;
+                prices[key].change24h = change24h;
+                updateCount++;
+                document.getElementById('update-count').innerText = updateCount;
+                renderPriceCards();
+            };
+            ws.onclose = () => { reconnectTimer = setTimeout(connectBybitWS, 3000); };
+        }
+
+        async function updateTopBalance() {
+            try {
+                const res = await fetch('/api/token/balance', { method: 'POST' });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success) document.getElementById('top-balance').innerText = data.balance + ' OMT';
+                }
+            } catch(e) {}
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderPriceCards();
+            updateTopBalance();
+            connectBybitWS();
+            initTradingView();
+        });
+
+        // ── Bot Arena ────────────────────────────────────────────────
         let baChart = null;
         const baIndicators = { rsi: true, bollinger: false, regression: true, macd: false };
 
@@ -198,7 +502,7 @@
 
         function baRunBacktest() {
             // 시뮬레이션 백테스팅 (실제 BTC 가격 기반 난수 시드)
-            const seed = 97000; // prices 객체 제거됨 — 고정 시드 사용
+            const seed = Math.floor(prices.BTC.price) || 97000;
             const trades = [];
             let equity = 10000, wins = 0, maxEq = 10000, maxDD = 0;
             const equityHistory = [equity];
