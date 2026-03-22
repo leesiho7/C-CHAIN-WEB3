@@ -359,9 +359,10 @@
 
         // 6. [시각화 렌더링] Chart.js 엘리어트 파동 패널 표시
         const points = data.visualData?.points || (Array.isArray(data.visualData) ? data.visualData : null);
-        
+
         if (points && points.length > 0) {
-            console.log("📊 AI 시각화 데이터 수신:", points);
+            points.sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
+            console.log("📊 AI 시각화 데이터 수신 (정렬 후):", points);
             renderWaveChart(points);
         } else {
             console.warn("⚠️ AI 시각화 데이터가 없거나 형식이 올바르지 않습니다:", data.visualData);
