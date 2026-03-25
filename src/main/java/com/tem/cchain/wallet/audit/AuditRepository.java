@@ -1,5 +1,6 @@
 package com.tem.cchain.wallet.audit;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -45,4 +46,9 @@ public interface AuditRepository extends JpaRepository<AuditEvent, Long> {
      * 특정 txHash로 감사 이벤트 조회.
      */
     java.util.Optional<AuditEvent> findByTxHash(String txHash);
+
+    /**
+     * 최근 감사 이벤트 N개 조회 (대시보드용).
+     */
+    List<AuditEvent> findAllByOrderByOccurredAtDesc(Pageable pageable);
 }
