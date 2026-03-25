@@ -108,6 +108,58 @@
 			<artifactId>pgvector</artifactId>
 			<version>0.1.1</version>
 		</dependency>
+
+		<!-- =====================================================
+		     ENTERPRISE WALLET SECURITY LAYER
+		     ===================================================== -->
+
+		<!-- AWS SDK v2 BOM: 버전 일관성을 BOM이 관리 -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>bom</artifactId>
+			<version>2.25.23</version>
+			<type>pom</type>
+			<scope>import</scope>
+		</dependency>
+
+		<!-- AWS KMS: 프라이빗 키 없이 트랜잭션 서명 (HSM 수준 보안) -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>kms</artifactId>
+			<version>2.25.23</version>
+		</dependency>
+
+		<!-- AWS STS: IAM Role AssumeRole (EC2/ECS/Lambda 인스턴스 프로필 포함) -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>sts</artifactId>
+			<version>2.25.23</version>
+		</dependency>
+
+		<!-- Spring AOP: @RequiresWalletRole 어노테이션 기반 역할 검증 -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-aop</artifactId>
+		</dependency>
+
+		<!-- Bouncy Castle: DER 서명 디코딩, secp256k1 공개키 파싱 -->
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk18on</artifactId>
+			<version>1.78.1</version>
+		</dependency>
+
+		<!-- Mockito: TDD 단위 테스트 Mock 지원 -->
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>

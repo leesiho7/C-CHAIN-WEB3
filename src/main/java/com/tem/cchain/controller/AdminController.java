@@ -3,6 +3,7 @@ package com.tem.cchain.controller;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,8 +13,9 @@ import com.tem.cchain.entity.Document;
 import com.tem.cchain.repository.TranslationRepository;
 import com.tem.cchain.repository.DocumentRepository;
 import com.tem.cchain.service.ContributionService;
-import com.tem.cchain.service.TokenService;
-import com.tem.cchain.service.AiService; // ChatGPT 전용으로 업데이트된 서비스
+import com.tem.cchain.service.SyncService;
+import com.tem.cchain.service.AiService;
+import org.springframework.http.ResponseEntity;
 
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +35,7 @@ public class AdminController {
     private final TranslationRepository translationRepository;
     private final DocumentRepository documentRepository;
     private final ContributionService contributionService;
-    private final TokenService tokenService;
+    private final SyncService syncService;
     private final AiService aiService;
 
     /**
@@ -52,7 +54,8 @@ public class AdminController {
         
         List<Translation> pendingList = translationRepository.findByVerifiedAtIsNull();
         model.addAttribute("pendingList", pendingList);
-        return "admin"; 
+        model.addAttribute("indexerRunning", syncService.getRunning().get());
+        return "admin";
     }
 
     /**
@@ -112,13 +115,11 @@ public class AdminController {
             Member contributor = tr.getUser();
 
             if (contributor != null && contributor.getWalletaddress() != null) {
-                // 토큰 지급 로직 실행 (Web3j 연동)
-                log.info("💰 토큰 지급 시작: {}", contributor.getEmail());
-                String realTxHash = tokenService.rewardContribution(contributor.getEmail(), 100L);
-                
+                log.info("토큰 지급 시작: {}", contributor.getEmail());
+                contributionService.completeVerification(tr);
+                String realTxHash = tr.getBlockchainHash();
+
                 if (realTxHash != null) {
-                    tr.setBlockchainHash(realTxHash);
-                    contributionService.completeVerification(tr);
                     
                     Document doc = tr.getDocument();
                     if (doc != null) { 
@@ -140,7 +141,41 @@ public class AdminController {
     }
 
     /**
-     * 4. [반려] 처리
+     * 4. 인덱서 중지/재시작 (관리자 전용)
+     * 외부에 노출되지 않는 내부 API — 어드민 로그인 세션 확인
+     */
+    @PostMapping("/admin/indexer/stop")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> indexerStop(HttpSession session) {
+        if (!isAdmin(session)) return ResponseEntity.status(403).body(Map.of("error", "권한 없음"));
+        syncService.stop();
+        log.info("[Admin] 인덱서 수동 중지");
+        return ResponseEntity.ok(Map.of("status", "stopped", "running", false));
+    }
+
+    @PostMapping("/admin/indexer/start")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> indexerStart(HttpSession session) {
+        if (!isAdmin(session)) return ResponseEntity.status(403).body(Map.of("error", "권한 없음"));
+        syncService.start();
+        log.info("[Admin] 인덱서 수동 재시작");
+        return ResponseEntity.ok(Map.of("status", "started", "running", true));
+    }
+
+    @GetMapping("/admin/indexer/status")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> indexerStatus(HttpSession session) {
+        if (!isAdmin(session)) return ResponseEntity.status(403).body(Map.of("error", "권한 없음"));
+        return ResponseEntity.ok(Map.of("running", syncService.getRunning().get()));
+    }
+
+    private boolean isAdmin(HttpSession session) {
+        Member m = (Member) session.getAttribute("loginMember");
+        return m != null && "admin@cchain.com".equals(m.getEmail());
+    }
+
+    /**
+     * 5. [반려] 처리
      */
     @PostMapping("/admin/reject/{id}")
     @Transactional

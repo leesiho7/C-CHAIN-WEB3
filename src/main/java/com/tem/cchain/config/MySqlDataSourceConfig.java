@@ -34,7 +34,10 @@ import java.util.Properties;
 @Slf4j
 @Configuration
 @EnableJpaRepositories(
-        basePackages = "com.tem.cchain.repository",
+        basePackages = {
+            "com.tem.cchain.repository",
+            "com.tem.cchain.wallet.audit"   // AuditRepository 스캔 추가
+        },
         entityManagerFactoryRef = "mysqlEntityManagerFactory",
         transactionManagerRef = "mysqlTransactionManager"
 )
@@ -93,7 +96,10 @@ public class MySqlDataSourceConfig {
 
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
         em.setDataSource(dataSource);
-        em.setPackagesToScan("com.tem.cchain.entity");
+        em.setPackagesToScan(
+            "com.tem.cchain.entity",
+            "com.tem.cchain.wallet.audit"   // AuditEvent 엔티티 스캔 추가
+        );
         em.setPersistenceUnitName("mysql");
 
         HibernateJpaVendorAdapter adapter = new HibernateJpaVendorAdapter();

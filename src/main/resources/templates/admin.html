@@ -24,6 +24,25 @@
                 <i class="fa-solid fa-robot"></i> AI 테스트 랩
             </a>
 
+            <!-- 인덱서 제어 (관리자 전용 — 일반 유저에게 보이지 않음) -->
+            <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">인덱서</span>
+                <div id="indexerDot"
+                     class="w-2 h-2 rounded-full transition-all"
+                     th:classappend="${indexerRunning} ? 'bg-emerald-400 shadow-sm shadow-emerald-300' : 'bg-slate-300'">
+                </div>
+                <span id="indexerLabel" class="text-xs font-bold"
+                      th:text="${indexerRunning} ? '실행중' : '중지됨'"
+                      th:classappend="${indexerRunning} ? 'text-emerald-600' : 'text-slate-400'">
+                </span>
+                <button id="indexerToggleBtn"
+                        onclick="toggleIndexer()"
+                        class="ml-1 text-[10px] font-black px-2.5 py-1 rounded-lg transition-all"
+                        th:classappend="${indexerRunning} ? 'bg-rose-50 text-rose-500 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'"
+                        th:text="${indexerRunning} ? '중지' : '시작'">
+                </button>
+            </div>
+
             <span class="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-full">
                 <i class="fa-solid fa-user-tie mr-1"></i> admin@cchain.com
             </span>
@@ -101,5 +120,48 @@
             </table>
         </div>
     </main>
+
+<script>
+    let isRunning = /*[[${indexerRunning}]]*/ true;
+
+    async function toggleIndexer() {
+        const btn = document.getElementById('indexerToggleBtn');
+        btn.disabled = true;
+        btn.textContent = '처리중...';
+
+        const endpoint = isRunning ? '/admin/indexer/stop' : '/admin/indexer/start';
+        try {
+            const res = await fetch(endpoint, { method: 'POST' });
+            const data = await res.json();
+
+            isRunning = data.running;
+            updateIndexerUI(isRunning);
+        } catch (e) {
+            alert('인덱서 제어 실패: ' + e.message);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function updateIndexerUI(running) {
+        const dot   = document.getElementById('indexerDot');
+        const label = document.getElementById('indexerLabel');
+        const btn   = document.getElementById('indexerToggleBtn');
+
+        if (running) {
+            dot.className   = 'w-2 h-2 rounded-full transition-all bg-emerald-400 shadow-sm shadow-emerald-300';
+            label.className = 'text-xs font-bold text-emerald-600';
+            label.textContent = '실행중';
+            btn.className   = 'ml-1 text-[10px] font-black px-2.5 py-1 rounded-lg transition-all bg-rose-50 text-rose-500 hover:bg-rose-100';
+            btn.textContent = '중지';
+        } else {
+            dot.className   = 'w-2 h-2 rounded-full transition-all bg-slate-300';
+            label.className = 'text-xs font-bold text-slate-400';
+            label.textContent = '중지됨';
+            btn.className   = 'ml-1 text-[10px] font-black px-2.5 py-1 rounded-lg transition-all bg-emerald-50 text-emerald-600 hover:bg-emerald-100';
+            btn.textContent = '시작';
+        }
+    }
+</script>
 </body>
 </html>

@@ -25,11 +25,14 @@ public class Member {
     
     @Column(nullable = false)
     private String userpw; 
-    //실제 이더리움 입금 주소 (0x.....)
-    private String walletaddress; 
-    //주소 개인키(실제 운영시에는 반드시ㅣ 강력하게 암호화 해야함!!)
-    private String privateKey;
-    
+    // MetaMask에서 연결한 이더리움 주소 (0x...)
+    // 유저의 개인키는 MetaMask가 관리 → 서버는 절대 보관하지 않음
+    private String walletaddress;
+
+    // privateKey 필드 제거됨 (KMS/MetaMask 하이브리드 전환)
+    // DB 컬럼은 hibernate ddl-auto=update 특성상 자동 삭제되지 않으므로
+    // 운영 DB에서는 직접 ALTER TABLE member DROP COLUMN private_key; 실행 권장
+
     //db상의 omt 잔고
     private  java.math.BigDecimal omtBalance;
     

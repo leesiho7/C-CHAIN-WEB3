@@ -3,6 +3,7 @@ package com.tem.cchain.service;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.ObjectProvider;
@@ -17,7 +18,9 @@ import org.web3j.protocol.core.methods.response.Log;
 import com.tem.cchain.entity.IndexerState;
 import com.tem.cchain.repository.IndexerStateRepository;
 
+import io.reactivex.disposables.Disposable;
 import jakarta.annotation.PostConstruct;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,6 +47,45 @@ public class SyncService {
 
     private final java.util.Map<String, String> WATCH_TARGETS = new java.util.HashMap<>();
 
+    // 실시간 리스너 구독 객체 (중지 시 dispose 호출)
+    private volatile Disposable realtimeSubscription;
+
+    // 현재 인덱서 동작 여부 (AtomicBoolean: 멀티스레드 안전)
+    @Getter
+    private final AtomicBoolean running = new AtomicBoolean(false);
+
+    /**
+     * 인덱서 중지. 관리자 콘솔에서 호출.
+     */
+    public void stop() {
+        if (!running.get()) return;
+        running.set(false);
+        if (realtimeSubscription != null && !realtimeSubscription.isDisposed()) {
+            realtimeSubscription.dispose();
+            log.info("[Indexer] 실시간 리스너 중지 완료");
+        }
+        log.info("[Indexer] 인덱서 중지됨");
+    }
+
+    /**
+     * 인덱서 재시작. 관리자 콘솔에서 호출.
+     */
+    public void start() {
+        if (running.get()) {
+            log.info("[Indexer] 이미 실행 중");
+            return;
+        }
+        Web3j web3j = web3jProvider.getIfAvailable();
+        if (web3j == null) {
+            log.warn("[Indexer] Web3j 미연결 — 재시작 불가");
+            return;
+        }
+        running.set(true);
+        startRealTimeListener(web3j);
+        Executors.newSingleThreadExecutor().submit(this::syncOldBlocks);
+        log.info("[Indexer] 인덱서 재시작됨");
+    }
+
     @PostConstruct
     public void init() {
         // 인덱싱 대상 설정 (OMT는 설정값에서 가져옴)
@@ -64,11 +106,8 @@ public class SyncService {
 
         log.info("[Indexer] 멀티 자산 인덱싱 시작: {}", WATCH_TARGETS.values());
 
-        // 실시간 리스너 즉시 가동
+        running.set(true);
         startRealTimeListener(web3j);
-
-        // 과거 동기화는 전용 단일 스레드에서 실행
-        // (기본 ForkJoinPool 사용 시 RPC 블로킹 I/O가 공용 스레드 풀을 점유하는 문제 방지)
         Executors.newSingleThreadExecutor().submit(this::syncOldBlocks);
     }
 
@@ -101,7 +140,7 @@ public class SyncService {
             log.info("[Indexer] 동기화 범위: {} → {}", fromBlock, latestBlock);
 
             BigInteger current = fromBlock;
-            while (current.compareTo(latestBlock) <= 0) {
+            while (running.get() && current.compareTo(latestBlock) <= 0) {
                 BigInteger end = current.add(BigInteger.valueOf(BATCH_BLOCK_SIZE - 1)).min(latestBlock);
 
                 List<Log> logs = fetchLogs(web3j, current, end);
@@ -134,7 +173,7 @@ public class SyncService {
         EthFilter filter = buildFilter(
                 web3j, DefaultBlockParameterName.LATEST, DefaultBlockParameterName.LATEST);
 
-        web3j.ethLogFlowable(filter).subscribe(
+        realtimeSubscription = web3j.ethLogFlowable(filter).subscribe(
                 logData -> {
                     batchSaver.saveBatch(List.of(logData), WATCH_TARGETS);
                     updateState(logData.getBlockNumber());
