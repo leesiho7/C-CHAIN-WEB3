@@ -6,8 +6,12 @@
     <title>C-Chain | 트랜잭션 인덱서</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Pretendard', sans-serif; letter-spacing: -0.02em; }
+        .cchain-brand { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; color: #1e293b; line-height: 1; letter-spacing: -0.03em; }
         body { background: linear-gradient(to bottom right, #f9fafb, #eff6ff, #fdf4ff); min-height: 100vh; }
         .pulse-ring { animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
         @keyframes pulse-ring {
@@ -23,8 +27,9 @@
     <header class="bg-white/80 backdrop-blur-md border-b px-6 py-4 sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-6">
-                <a href="/" class="flex items-center">
-                    <img src="/images/Rectangle.png" alt="C-Chain" class="h-8 w-auto">
+                <a href="/" class="flex items-center gap-2.5 shrink-0">
+                    <img src="/images/Rectangle.png" alt="" class="h-8 w-auto">
+                    <span class="cchain-brand">C-Chain</span>
                 </a>
                 <span class="text-gray-300">|</span>
                 <nav class="hidden md:flex items-center gap-1">

@@ -7,13 +7,22 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <style>
+        .cchain-brand { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; color: #1e293b; line-height: 1; letter-spacing: -0.03em; }
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
     <header class="bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm">
-        <div onclick="location.href='/'" class="flex items-center space-x-2 cursor-pointer">
-            <img src="/images/Rectangle.png" alt="C-Chain" class="h-8 w-auto">
-            <span class="text-gray-400">|</span>
+        <div onclick="location.href='/'" class="flex items-center gap-4 cursor-pointer">
+            <div class="flex items-center gap-2.5 shrink-0">
+                <img src="/images/Rectangle.png" alt="" class="h-8 w-auto">
+                <span class="cchain-brand">C-Chain</span>
+            </div>
+            <span class="text-gray-300">|</span>
             <h1 class="text-lg font-semibold text-gray-700">마이페이지</h1>
         </div>
         <button onclick="history.back()" class="text-gray-500 hover:text-gray-800 transition text-sm font-medium">
