@@ -5,8 +5,6 @@ import com.tem.cchain.entity.OmtTransaction;
 import com.tem.cchain.repository.IndexerStateRepository;
 import com.tem.cchain.repository.OmtTransactionRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,16 +21,12 @@ public class OmtIndexerController {
     private final IndexerStateRepository stateRepository;
 
     /**
-     * 1. 최근 OMT 거래 내역 조회 (최근 10건)
+     * 1. 최근 거래 내역 조회 — 최대 100건 (blockNumber DESC)
+     * DB LIMIT으로 처리해 in-memory 슬라이딩 없이 메모리 안전.
      */
     @GetMapping("/recent")
     public ResponseEntity<List<OmtTransaction>> getRecentTransactions() {
-        // 최신 블록 순서대로 10개만 가져오기
-        List<OmtTransaction> transactions = txRepository.findAll(
-                PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "blockNumber"))
-        ).getContent();
-        
-        return ResponseEntity.ok(transactions);
+        return ResponseEntity.ok(txRepository.findTop100ByOrderByBlockNumberDesc());
     }
 
     /**
@@ -57,12 +51,11 @@ public class OmtIndexerController {
     }
 
     /**
-     * 3. 특정 주소의 거래 내역 검색
+     * 3. 특정 주소의 거래 내역 검색 — 최대 50건
      */
     @GetMapping("/address/{address}")
     public ResponseEntity<List<OmtTransaction>> getTransactionsByAddress(@PathVariable String address) {
-        // From 또는 To에 해당 주소가 포함된 거래 검색
-        List<OmtTransaction> transactions = txRepository.findTop20ByFromAddressOrToAddressOrderByBlockNumberDesc(address, address);
-        return ResponseEntity.ok(transactions);
+        return ResponseEntity.ok(
+            txRepository.findTop50ByFromAddressOrToAddressOrderByBlockNumberDesc(address, address));
     }
 }
