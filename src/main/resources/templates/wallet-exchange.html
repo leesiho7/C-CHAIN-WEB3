@@ -135,68 +135,98 @@
                                 <p class="text-[11px] text-gray-400 ml-8">REST + WebSocket API 연동 예정</p>
                             </div>
 
-                            <!-- Bybit -->
-                            <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                                <div class="flex items-center justify-between mb-1">
+                            <!-- Bybit Fast Connect -->
+                            <div class="rounded-2xl overflow-hidden border border-amber-200 shadow-sm">
+                                <!-- 헤더 -->
+                                <div class="bg-gradient-to-r from-amber-400 to-orange-400 px-4 py-3 flex items-center justify-between">
                                     <div class="flex items-center gap-2">
-                                        <div class="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
-                                            <span class="text-[9px] font-black text-white">By</span>
+                                        <div class="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
+                                            <span class="text-[11px] font-black text-white">By</span>
                                         </div>
-                                        <p class="font-bold text-gray-900">Bybit</p>
+                                        <div>
+                                            <p class="font-bold text-white text-sm leading-tight">Bybit</p>
+                                            <p class="text-[10px] text-white/80">거래소 연결</p>
+                                        </div>
                                     </div>
-                                    <span id="bybitStatusBadge" class="text-xs text-gray-500 bg-gray-100 border border-gray-200 px-2 py-1 rounded-full font-semibold">
+                                    <span id="bybitStatusBadge"
+                                          class="text-[10px] font-bold text-white/90 bg-white/20 px-2 py-0.5 rounded-full">
                                         확인 중...
                                     </span>
                                 </div>
-                                <p class="text-[11px] text-amber-700 ml-8 mb-2">
-                                    실시간 시세 스트림 (Public WebSocket) + 거래 계정 연결
-                                </p>
 
-                                <!-- 연결됨: 잔액 패널 -->
-                                <div id="bybitBalancePanel" class="hidden ml-8 space-y-2">
-                                    <div id="bybitCoinList" class="space-y-1"></div>
-                                    <div class="flex gap-2 mt-2">
-                                        <button onclick="loadBybitBalance()"
-                                                class="flex-1 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition">
-                                            <i class="fa-solid fa-rotate-right mr-1"></i>잔액 새로고침
-                                        </button>
-                                        <button onclick="disconnectBybit()"
-                                                class="py-1.5 px-3 bg-gray-200 hover:bg-red-100 hover:text-red-700 text-gray-600 text-xs font-bold rounded-lg transition">
-                                            연결 해제
-                                        </button>
+                                <div class="bg-white p-4">
+                                    <!-- ① 연결됨: 잔액 패널 -->
+                                    <div id="bybitBalancePanel" class="hidden space-y-2">
+                                        <div id="bybitAuthMethodBadge" class="hidden"></div>
+                                        <div id="bybitCoinList" class="space-y-1 max-h-32 overflow-y-auto"></div>
+                                        <div class="flex gap-2 mt-2">
+                                            <button onclick="loadBybitBalance()"
+                                                    class="flex-1 py-1.5 text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition">
+                                                <i class="fa-solid fa-rotate-right mr-1"></i>새로고침
+                                            </button>
+                                            <button onclick="disconnectBybit()"
+                                                    class="py-1.5 px-3 text-xs font-bold text-gray-500 border border-gray-200 rounded-lg hover:bg-red-50 hover:text-red-600 transition">
+                                                해제
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <!-- 미연결: API Key 연결 폼 -->
-                                <div id="bybitApiForm" class="ml-8 space-y-2">
-                                    <div>
-                                        <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 block">API Key</label>
-                                        <input type="text" id="bybitApiKey" placeholder="Bybit API Key 입력"
-                                               class="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-400">
-                                    </div>
-                                    <div>
-                                        <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 block">API Secret</label>
-                                        <input type="password" id="bybitApiSecret" placeholder="Bybit API Secret 입력"
-                                               class="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-400">
-                                    </div>
-                                    <button onclick="connectBybitApi()"
-                                            class="w-full py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition">
-                                        거래 계정 연결하기
-                                    </button>
-                                    <div id="bybitConnectStatus" class="hidden text-[11px] font-medium rounded-lg px-2 py-1.5"></div>
-                                    <!-- API Key 안내 -->
-                                    <div class="bg-white border border-amber-100 rounded-lg p-2 mt-1">
-                                        <p class="text-[10px] text-amber-700 font-bold mb-1">
-                                            <i class="fa-solid fa-circle-info mr-1"></i>스트림 키 vs 거래 키 차이
-                                        </p>
-                                        <ul class="text-[10px] text-gray-500 space-y-0.5 leading-relaxed">
-                                            <li>• <span class="font-semibold text-gray-700">실시간 시세 스트림</span> — 공개 WebSocket, API 키 불필요</li>
-                                            <li>• <span class="font-semibold text-gray-700">거래 계정 연결</span> — Bybit 계정의 API Key + Secret 필요</li>
-                                        </ul>
-                                        <a href="https://www.bybit.com/app/user/api-management" target="_blank"
-                                           class="inline-flex items-center gap-1 mt-1.5 text-[10px] font-bold text-amber-600 hover:underline">
-                                            Bybit API 키 발급 <i class="fa-solid fa-arrow-up-right-from-square text-[8px]"></i>
-                                        </a>
+                                    <!-- ② 미연결: Fast Connect + 폴백 -->
+                                    <div id="bybitConnectPanel" class="space-y-3">
+                                        <!-- Fast Connect 버튼 -->
+                                        <div id="bybitFastConnectArea">
+                                            <a href="/api/exchange/bybit/oauth/start"
+                                               id="bybitFastConnectBtn"
+                                               class="flex items-center justify-center gap-2.5 w-full py-3 rounded-xl font-bold text-sm text-white
+                                                      bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600
+                                                      shadow-md shadow-amber-200 transition-all active:scale-95">
+                                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                                    <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                                </svg>
+                                                Fast Connect
+                                                <span class="text-[10px] font-medium text-white/80 ml-0.5">— 클릭 한 번으로 연결</span>
+                                            </a>
+                                            <!-- OAuth 미설정 안내 (서버에서 available=false 응답 시 표시) -->
+                                            <p id="bybitOAuthUnavailableNote" class="hidden mt-1.5 text-[10px] text-amber-600 text-center">
+                                                <i class="fa-solid fa-circle-info mr-0.5"></i>
+                                                OAuth 준비 중 — 아래 API 키로 연결해 주세요
+                                            </p>
+                                        </div>
+
+                                        <!-- 구분선 + 폴백 토글 -->
+                                        <div class="flex items-center gap-2">
+                                            <div class="flex-1 h-px bg-gray-100"></div>
+                                            <button onclick="toggleApiKeyForm()"
+                                                    class="text-[10px] text-gray-400 hover:text-gray-600 font-medium flex items-center gap-1 transition">
+                                                <i class="fa-solid fa-key text-[9px]"></i>
+                                                API 키로 직접 연결
+                                                <i id="apiKeyFormChevron" class="fa-solid fa-chevron-down text-[8px] transition-transform"></i>
+                                            </button>
+                                            <div class="flex-1 h-px bg-gray-100"></div>
+                                        </div>
+
+                                        <!-- API Key 폴백 폼 (기본 숨김) -->
+                                        <div id="bybitApiKeyForm" class="hidden space-y-2">
+                                            <div>
+                                                <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 block">API Key</label>
+                                                <input type="text" id="bybitApiKey" placeholder="Bybit API Key"
+                                                       class="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-400">
+                                            </div>
+                                            <div>
+                                                <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 block">API Secret</label>
+                                                <input type="password" id="bybitApiSecret" placeholder="Bybit API Secret"
+                                                       class="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-400">
+                                            </div>
+                                            <button onclick="connectBybitApi()"
+                                                    class="w-full py-1.5 bg-gray-800 hover:bg-black text-white text-xs font-bold rounded-lg transition">
+                                                연결하기
+                                            </button>
+                                            <div id="bybitConnectStatus" class="hidden text-[11px] font-medium rounded-lg px-2 py-1.5"></div>
+                                            <a href="https://www.bybit.com/app/user/api-management" target="_blank"
+                                               class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 hover:underline">
+                                                API 키 발급하기 <i class="fa-solid fa-arrow-up-right-from-square text-[8px]"></i>
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -456,8 +486,27 @@
         loadDashboard();
         setInterval(loadDashboard, 30000);
 
-        // ── Bybit 연결 상태 초기화 ──────────────────────────────
+        // ═══════════════════════════════════════════════════════
+        // Bybit Fast Connect (OAuth) + API Key 폴백
+        // ═══════════════════════════════════════════════════════
+
         async function initBybitStatus() {
+            // 1. OAuth 사용 가능 여부 확인
+            try {
+                const avRes  = await fetch('/api/exchange/bybit/oauth/available');
+                const avData = await avRes.json();
+                if (!avData.available) {
+                    // OAuth 미설정 → Fast Connect 버튼 비활성화 + 안내 표시
+                    document.getElementById('bybitFastConnectBtn').classList.add(
+                        'opacity-50', 'pointer-events-none');
+                    document.getElementById('bybitOAuthUnavailableNote').classList.remove('hidden');
+                    // API Key 폼 자동 열기
+                    document.getElementById('bybitApiKeyForm').classList.remove('hidden');
+                    document.getElementById('apiKeyFormChevron').style.transform = 'rotate(180deg)';
+                }
+            } catch (_) {}
+
+            // 2. 연결 상태 확인
             try {
                 const res  = await fetch('/api/exchange/bybit/status');
                 const data = await res.json();
@@ -470,83 +519,109 @@
             } catch (e) {
                 setBybitDisconnected();
             }
+
+            // 3. URL 파라미터로 OAuth 콜백 결과 처리
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('connected') === 'bybit') {
+                showBybitToast('success', '<i class="fa-solid fa-circle-check mr-1"></i>Bybit Fast Connect 완료!');
+                window.history.replaceState({}, '', '/exchange');
+            } else if (params.get('error') === 'oauth_failed') {
+                showBybitToast('error', 'Bybit 연결 실패: ' + (params.get('msg') || '오류'));
+                window.history.replaceState({}, '', '/exchange');
+            }
         }
 
-        function setBybitConnected() {
-            document.getElementById('bybitStatusBadge').textContent = '거래 계정 연결됨';
-            document.getElementById('bybitStatusBadge').className =
-                'text-xs text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-1 rounded-full font-semibold';
-            document.getElementById('bybitApiForm').classList.add('hidden');
+        function setBybitConnected(authMethod) {
+            const badge = document.getElementById('bybitStatusBadge');
+            const isOAuth = authMethod === 'OAUTH';
+            badge.textContent = isOAuth ? '⚡ Fast Connect' : '🔑 API 키 연결됨';
+            badge.className   = 'text-[10px] font-bold text-white/90 bg-white/30 px-2 py-0.5 rounded-full';
+            document.getElementById('bybitConnectPanel').classList.add('hidden');
             document.getElementById('bybitBalancePanel').classList.remove('hidden');
+
+            const methodBadge = document.getElementById('bybitAuthMethodBadge');
+            if (isOAuth) {
+                methodBadge.classList.remove('hidden');
+                methodBadge.innerHTML = '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full"><svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>OAuth 2.0 인증</span>';
+            } else {
+                methodBadge.classList.add('hidden');
+            }
         }
 
         function setBybitDisconnected() {
-            document.getElementById('bybitStatusBadge').textContent = '미연결';
-            document.getElementById('bybitStatusBadge').className =
-                'text-xs text-gray-500 bg-gray-100 border border-gray-200 px-2 py-1 rounded-full font-semibold';
-            document.getElementById('bybitApiForm').classList.remove('hidden');
+            const badge = document.getElementById('bybitStatusBadge');
+            badge.textContent = '미연결';
+            badge.className   = 'text-[10px] font-bold text-white/70 bg-black/10 px-2 py-0.5 rounded-full';
+            document.getElementById('bybitConnectPanel').classList.remove('hidden');
             document.getElementById('bybitBalancePanel').classList.add('hidden');
         }
 
         async function loadBybitBalance() {
             const coinList = document.getElementById('bybitCoinList');
-            coinList.innerHTML = '<p class="text-[11px] text-gray-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i>잔액 조회 중...</p>';
+            coinList.innerHTML = '<p class="text-[11px] text-gray-400 py-1"><i class="fa-solid fa-spinner fa-spin mr-1"></i>잔액 조회 중...</p>';
             try {
                 const res  = await fetch('/api/exchange/bybit/balance');
                 const data = await res.json();
                 if (!data.connected) { setBybitDisconnected(); return; }
-                if (!data.success)   {
-                    coinList.innerHTML = '<p class="text-[11px] text-rose-600">' + data.message + '</p>';
+                if (!data.success) {
+                    coinList.innerHTML = '<p class="text-[11px] text-rose-600 py-1">' + data.message + '</p>';
                     return;
                 }
+                // 연결 방식 업데이트
+                setBybitConnected(data.authMethod);
+
                 if (!data.coins || data.coins.length === 0) {
-                    coinList.innerHTML = '<p class="text-[11px] text-gray-400">보유 잔액 없음</p>';
+                    coinList.innerHTML = '<p class="text-[11px] text-gray-400 py-2 text-center">보유 잔액 없음</p>';
                     return;
                 }
-                coinList.innerHTML = data.coins.map(c =>
-                    `<div class="flex justify-between items-center py-1 border-b border-amber-100 last:border-0">
-                        <span class="text-[11px] font-bold text-gray-700">${c.coin}</span>
-                        <div class="text-right">
-                            <p class="text-[11px] font-semibold text-gray-900">${parseFloat(c.balance).toFixed(4)}</p>
-                            <p class="text-[10px] text-gray-400">$${parseFloat(c.usdValue).toFixed(2)}</p>
+                coinList.innerHTML = data.coins.map(c => {
+                    const bal = parseFloat(c.balance);
+                    const usd = parseFloat(c.usdValue);
+                    return `<div class="flex justify-between items-center py-1.5 border-b border-gray-50 last:border-0">
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center">
+                                <span class="text-[8px] font-black text-amber-700">${c.coin.slice(0,2)}</span>
+                            </div>
+                            <span class="text-xs font-bold text-gray-800">${c.coin}</span>
                         </div>
-                    </div>`
-                ).join('');
+                        <div class="text-right">
+                            <p class="text-xs font-semibold text-gray-900">${bal.toLocaleString(undefined, {maximumFractionDigits: 4})}</p>
+                            <p class="text-[10px] text-gray-400">≈ $${usd.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+                        </div>
+                    </div>`;
+                }).join('');
             } catch (e) {
-                coinList.innerHTML = '<p class="text-[11px] text-rose-600">조회 오류: ' + e.message + '</p>';
+                coinList.innerHTML = '<p class="text-[11px] text-rose-600 py-1">조회 오류: ' + e.message + '</p>';
             }
         }
 
-        // ── Bybit 거래 계정 연결 ──────────────────────────────
+        function toggleApiKeyForm() {
+            const form    = document.getElementById('bybitApiKeyForm');
+            const chevron = document.getElementById('apiKeyFormChevron');
+            const hidden  = form.classList.toggle('hidden');
+            chevron.style.transform = hidden ? '' : 'rotate(180deg)';
+        }
+
+        // ── API Key 수동 연결 (폴백) ──────────────────────────
         async function connectBybitApi() {
             const apiKey    = document.getElementById('bybitApiKey').value.trim();
             const apiSecret = document.getElementById('bybitApiSecret').value.trim();
-
             if (!apiKey || !apiSecret) {
                 showBybitStatus('error', 'API Key와 Secret을 모두 입력해 주세요.');
                 return;
             }
-
             showBybitStatus('info', '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Bybit 서버에서 검증 중...');
-
             try {
                 const res  = await fetch('/api/exchange/bybit/connect', {
-                    method:  'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body:    JSON.stringify({ apiKey, apiSecret })
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ apiKey, apiSecret })
                 });
                 const data = await res.json();
-
                 if (data.success) {
-                    showBybitStatus('success',
-                        '<i class="fa-solid fa-circle-check mr-1"></i>' + data.message);
-                    setTimeout(() => {
-                        setBybitConnected();
-                        loadBybitBalance();
-                    }, 800);
+                    showBybitStatus('success', '<i class="fa-solid fa-circle-check mr-1"></i>' + data.message);
+                    setTimeout(() => { setBybitConnected('API_KEY'); loadBybitBalance(); }, 800);
                 } else {
-                    showBybitStatus('error',
-                        '<i class="fa-solid fa-circle-xmark mr-1"></i>' + data.message);
+                    showBybitStatus('error', '<i class="fa-solid fa-circle-xmark mr-1"></i>' + data.message);
                 }
             } catch (e) {
                 showBybitStatus('error', '연결 실패: ' + e.message);
@@ -558,9 +633,7 @@
             try {
                 await fetch('/api/exchange/bybit/disconnect', { method: 'DELETE' });
                 setBybitDisconnected();
-            } catch (e) {
-                alert('연결 해제 오류: ' + e.message);
-            }
+            } catch (e) { alert('연결 해제 오류: ' + e.message); }
         }
 
         function showBybitStatus(type, html) {
@@ -569,11 +642,22 @@
             const styles = {
                 success: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
                 error:   'bg-rose-50 text-rose-700 border border-rose-200',
-                warn:    'bg-amber-50 text-amber-700 border border-amber-200',
                 info:    'bg-blue-50 text-blue-700 border border-blue-200',
             };
-            el.className = 'text-[11px] font-medium rounded-lg px-2 py-1.5 ' + (styles[type] || styles.info);
+            el.className = 'text-[11px] font-medium rounded-lg px-2 py-1.5 '
+                + (styles[type] || styles.info);
             el.innerHTML = html;
+        }
+
+        function showBybitToast(type, html) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-bold '
+                + (type === 'success'
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-rose-500 text-white');
+            toast.innerHTML = html;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
         }
 
         // Bybit 연결 상태 초기 확인
