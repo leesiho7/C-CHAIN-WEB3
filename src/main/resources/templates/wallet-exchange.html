@@ -120,22 +120,72 @@
                     <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
                         <h3 class="text-lg font-bold text-gray-900 mb-4">연결된 거래소</h3>
                         <div class="space-y-3" id="connected-exchanges">
+
+                            <!-- Binance -->
                             <div class="p-4 bg-gray-50 rounded-xl">
-                                <div class="flex items-center justify-between mb-2">
-                                    <p class="font-bold text-gray-900">Binance</p>
+                                <div class="flex items-center justify-between mb-1">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center">
+                                            <span class="text-[9px] font-black text-yellow-900">B</span>
+                                        </div>
+                                        <p class="font-bold text-gray-900">Binance</p>
+                                    </div>
                                     <span class="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full font-semibold">준비 중</span>
                                 </div>
+                                <p class="text-[11px] text-gray-400 ml-8">REST + WebSocket API 연동 예정</p>
                             </div>
-                            <div class="p-4 bg-gray-50 rounded-xl">
-                                <div class="flex items-center justify-between mb-2">
-                                    <p class="font-bold text-gray-900">Upbit</p>
-                                    <span class="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full font-semibold">준비 중</span>
+
+                            <!-- Bybit -->
+                            <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                <div class="flex items-center justify-between mb-1">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
+                                            <span class="text-[9px] font-black text-white">By</span>
+                                        </div>
+                                        <p class="font-bold text-gray-900">Bybit</p>
+                                    </div>
+                                    <span class="text-xs text-amber-700 bg-amber-100 border border-amber-300 px-2 py-1 rounded-full font-semibold">
+                                        스트림 연결됨
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-amber-700 ml-8 mb-2">
+                                    실시간 시세 스트림 사용 중 (Public WebSocket)
+                                </p>
+                                <!-- API Key 연결 폼 -->
+                                <div id="bybitApiForm" class="ml-8 space-y-2">
+                                    <div>
+                                        <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 block">API Key</label>
+                                        <input type="text" id="bybitApiKey" placeholder="Bybit API Key 입력"
+                                               class="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-400">
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 block">API Secret</label>
+                                        <input type="password" id="bybitApiSecret" placeholder="Bybit API Secret 입력"
+                                               class="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-400">
+                                    </div>
+                                    <button onclick="connectBybitApi()"
+                                            class="w-full py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition">
+                                        거래 계정 연결하기
+                                    </button>
+                                    <div id="bybitConnectStatus" class="hidden text-[11px] font-medium rounded-lg px-2 py-1.5"></div>
+                                    <!-- API Key 안내 -->
+                                    <div class="bg-white border border-amber-100 rounded-lg p-2 mt-1">
+                                        <p class="text-[10px] text-amber-700 font-bold mb-1">
+                                            <i class="fa-solid fa-circle-info mr-1"></i>스트림 키 vs 거래 키 차이
+                                        </p>
+                                        <ul class="text-[10px] text-gray-500 space-y-0.5 leading-relaxed">
+                                            <li>• <span class="font-semibold text-gray-700">실시간 시세 스트림</span> — 공개 WebSocket, API 키 불필요</li>
+                                            <li>• <span class="font-semibold text-gray-700">거래 계정 연결</span> — Bybit 계정의 API Key + Secret 필요</li>
+                                        </ul>
+                                        <a href="https://www.bybit.com/app/user/api-management" target="_blank"
+                                           class="inline-flex items-center gap-1 mt-1.5 text-[10px] font-bold text-amber-600 hover:underline">
+                                            Bybit API 키 발급 <i class="fa-solid fa-arrow-up-right-from-square text-[8px]"></i>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
+
                         </div>
-                        <button class="w-full mt-4 py-3 border-2 border-dashed border-gray-300 hover:border-purple-500 hover:bg-purple-50 rounded-xl transition text-gray-600 hover:text-purple-600 font-semibold text-sm">
-                            + 거래소 연결
-                        </button>
                     </div>
 
                     <!-- 입금 패널 (비수탁형) -->
@@ -389,6 +439,45 @@
         // 초기 로드 및 30초마다 갱신
         loadDashboard();
         setInterval(loadDashboard, 30000);
+
+        // ── Bybit 거래 계정 연결 ──────────────────────────────
+        async function connectBybitApi() {
+            const apiKey    = document.getElementById('bybitApiKey').value.trim();
+            const apiSecret = document.getElementById('bybitApiSecret').value.trim();
+            const statusEl  = document.getElementById('bybitConnectStatus');
+
+            if (!apiKey || !apiSecret) {
+                showBybitStatus('error', 'API Key와 Secret을 모두 입력해 주세요.');
+                return;
+            }
+
+            showBybitStatus('info', '<i class="fa-solid fa-spinner fa-spin mr-1"></i>연결 확인 중...');
+
+            try {
+                // Bybit V5 계정 잔고 조회로 API 키 유효성 검증
+                // 실제 운영에서는 서버를 통해 요청해야 secret 노출 방지
+                // 여기서는 UI 레벨 안내만 처리
+                showBybitStatus('warn',
+                    '<i class="fa-solid fa-triangle-exclamation mr-1"></i>' +
+                    'API Secret은 서버를 통해서만 처리해야 안전합니다. ' +
+                    '현재는 서버 연동 준비 중입니다.');
+            } catch (e) {
+                showBybitStatus('error', '연결 실패: ' + e.message);
+            }
+        }
+
+        function showBybitStatus(type, html) {
+            const el = document.getElementById('bybitConnectStatus');
+            el.classList.remove('hidden');
+            const styles = {
+                success: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+                error:   'bg-rose-50 text-rose-700 border border-rose-200',
+                warn:    'bg-amber-50 text-amber-700 border border-amber-200',
+                info:    'bg-blue-50 text-blue-700 border border-blue-200',
+            };
+            el.className = 'text-[11px] font-medium rounded-lg px-2 py-1.5 ' + (styles[type] || styles.info);
+            el.innerHTML = html;
+        }
 
         // bfcache 복원 시 잔액 초기화
         window.addEventListener('pageshow', (e) => {
