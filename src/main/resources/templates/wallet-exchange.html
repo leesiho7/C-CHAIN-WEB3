@@ -144,14 +144,30 @@
                                         </div>
                                         <p class="font-bold text-gray-900">Bybit</p>
                                     </div>
-                                    <span class="text-xs text-amber-700 bg-amber-100 border border-amber-300 px-2 py-1 rounded-full font-semibold">
-                                        스트림 연결됨
+                                    <span id="bybitStatusBadge" class="text-xs text-gray-500 bg-gray-100 border border-gray-200 px-2 py-1 rounded-full font-semibold">
+                                        확인 중...
                                     </span>
                                 </div>
                                 <p class="text-[11px] text-amber-700 ml-8 mb-2">
-                                    실시간 시세 스트림 사용 중 (Public WebSocket)
+                                    실시간 시세 스트림 (Public WebSocket) + 거래 계정 연결
                                 </p>
-                                <!-- API Key 연결 폼 -->
+
+                                <!-- 연결됨: 잔액 패널 -->
+                                <div id="bybitBalancePanel" class="hidden ml-8 space-y-2">
+                                    <div id="bybitCoinList" class="space-y-1"></div>
+                                    <div class="flex gap-2 mt-2">
+                                        <button onclick="loadBybitBalance()"
+                                                class="flex-1 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition">
+                                            <i class="fa-solid fa-rotate-right mr-1"></i>잔액 새로고침
+                                        </button>
+                                        <button onclick="disconnectBybit()"
+                                                class="py-1.5 px-3 bg-gray-200 hover:bg-red-100 hover:text-red-700 text-gray-600 text-xs font-bold rounded-lg transition">
+                                            연결 해제
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 미연결: API Key 연결 폼 -->
                                 <div id="bybitApiForm" class="ml-8 space-y-2">
                                     <div>
                                         <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 block">API Key</label>
@@ -440,29 +456,110 @@
         loadDashboard();
         setInterval(loadDashboard, 30000);
 
+        // ── Bybit 연결 상태 초기화 ──────────────────────────────
+        async function initBybitStatus() {
+            try {
+                const res  = await fetch('/api/exchange/bybit/status');
+                const data = await res.json();
+                if (data.connected) {
+                    setBybitConnected();
+                    loadBybitBalance();
+                } else {
+                    setBybitDisconnected();
+                }
+            } catch (e) {
+                setBybitDisconnected();
+            }
+        }
+
+        function setBybitConnected() {
+            document.getElementById('bybitStatusBadge').textContent = '거래 계정 연결됨';
+            document.getElementById('bybitStatusBadge').className =
+                'text-xs text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-1 rounded-full font-semibold';
+            document.getElementById('bybitApiForm').classList.add('hidden');
+            document.getElementById('bybitBalancePanel').classList.remove('hidden');
+        }
+
+        function setBybitDisconnected() {
+            document.getElementById('bybitStatusBadge').textContent = '미연결';
+            document.getElementById('bybitStatusBadge').className =
+                'text-xs text-gray-500 bg-gray-100 border border-gray-200 px-2 py-1 rounded-full font-semibold';
+            document.getElementById('bybitApiForm').classList.remove('hidden');
+            document.getElementById('bybitBalancePanel').classList.add('hidden');
+        }
+
+        async function loadBybitBalance() {
+            const coinList = document.getElementById('bybitCoinList');
+            coinList.innerHTML = '<p class="text-[11px] text-gray-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i>잔액 조회 중...</p>';
+            try {
+                const res  = await fetch('/api/exchange/bybit/balance');
+                const data = await res.json();
+                if (!data.connected) { setBybitDisconnected(); return; }
+                if (!data.success)   {
+                    coinList.innerHTML = '<p class="text-[11px] text-rose-600">' + data.message + '</p>';
+                    return;
+                }
+                if (!data.coins || data.coins.length === 0) {
+                    coinList.innerHTML = '<p class="text-[11px] text-gray-400">보유 잔액 없음</p>';
+                    return;
+                }
+                coinList.innerHTML = data.coins.map(c =>
+                    `<div class="flex justify-between items-center py-1 border-b border-amber-100 last:border-0">
+                        <span class="text-[11px] font-bold text-gray-700">${c.coin}</span>
+                        <div class="text-right">
+                            <p class="text-[11px] font-semibold text-gray-900">${parseFloat(c.balance).toFixed(4)}</p>
+                            <p class="text-[10px] text-gray-400">$${parseFloat(c.usdValue).toFixed(2)}</p>
+                        </div>
+                    </div>`
+                ).join('');
+            } catch (e) {
+                coinList.innerHTML = '<p class="text-[11px] text-rose-600">조회 오류: ' + e.message + '</p>';
+            }
+        }
+
         // ── Bybit 거래 계정 연결 ──────────────────────────────
         async function connectBybitApi() {
             const apiKey    = document.getElementById('bybitApiKey').value.trim();
             const apiSecret = document.getElementById('bybitApiSecret').value.trim();
-            const statusEl  = document.getElementById('bybitConnectStatus');
 
             if (!apiKey || !apiSecret) {
                 showBybitStatus('error', 'API Key와 Secret을 모두 입력해 주세요.');
                 return;
             }
 
-            showBybitStatus('info', '<i class="fa-solid fa-spinner fa-spin mr-1"></i>연결 확인 중...');
+            showBybitStatus('info', '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Bybit 서버에서 검증 중...');
 
             try {
-                // Bybit V5 계정 잔고 조회로 API 키 유효성 검증
-                // 실제 운영에서는 서버를 통해 요청해야 secret 노출 방지
-                // 여기서는 UI 레벨 안내만 처리
-                showBybitStatus('warn',
-                    '<i class="fa-solid fa-triangle-exclamation mr-1"></i>' +
-                    'API Secret은 서버를 통해서만 처리해야 안전합니다. ' +
-                    '현재는 서버 연동 준비 중입니다.');
+                const res  = await fetch('/api/exchange/bybit/connect', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ apiKey, apiSecret })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showBybitStatus('success',
+                        '<i class="fa-solid fa-circle-check mr-1"></i>' + data.message);
+                    setTimeout(() => {
+                        setBybitConnected();
+                        loadBybitBalance();
+                    }, 800);
+                } else {
+                    showBybitStatus('error',
+                        '<i class="fa-solid fa-circle-xmark mr-1"></i>' + data.message);
+                }
             } catch (e) {
                 showBybitStatus('error', '연결 실패: ' + e.message);
+            }
+        }
+
+        async function disconnectBybit() {
+            if (!confirm('Bybit 거래 계정 연결을 해제하시겠습니까?')) return;
+            try {
+                await fetch('/api/exchange/bybit/disconnect', { method: 'DELETE' });
+                setBybitDisconnected();
+            } catch (e) {
+                alert('연결 해제 오류: ' + e.message);
             }
         }
 
@@ -478,6 +575,9 @@
             el.className = 'text-[11px] font-medium rounded-lg px-2 py-1.5 ' + (styles[type] || styles.info);
             el.innerHTML = html;
         }
+
+        // Bybit 연결 상태 초기 확인
+        initBybitStatus();
 
         // bfcache 복원 시 잔액 초기화
         window.addEventListener('pageshow', (e) => {
