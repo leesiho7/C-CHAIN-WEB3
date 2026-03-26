@@ -138,58 +138,132 @@
                         </button>
                     </div>
 
-                    <!-- OMT 입금 (비수탁형) -->
-                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-6">
-                        <div class="flex items-center gap-2 mb-1">
-                            <div class="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
-                                <i class="fa-solid fa-arrow-down text-white text-xs"></i>
+                    <!-- 입금 패널 (비수탁형) -->
+                    <div class="bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden">
+                        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-4">
+                            <div class="flex items-center gap-2 mb-0.5">
+                                <i class="fa-solid fa-arrow-down text-white text-sm"></i>
+                                <h3 class="text-base font-bold text-white">자산 입금</h3>
                             </div>
-                            <h3 class="text-lg font-bold text-gray-900">OMT 입금</h3>
+                            <p class="text-xs text-blue-200">MetaMask 직접 서명 · 비수탁형</p>
                         </div>
-                        <p class="text-xs text-gray-500 mb-4">MetaMask로 직접 서명·전송하는 비수탁형 방식</p>
 
-                        <!-- 입금 대상 서버 주소 -->
-                        <div class="bg-white border border-blue-100 rounded-xl p-3 mb-4">
-                            <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">입금 주소 (KMS 서버 지갑)</p>
-                            <div class="flex items-center gap-2">
-                                <p class="text-xs font-mono text-gray-700 flex-1 truncate" id="depositServerAddr">조회 중...</p>
-                                <button onclick="copyServerAddr()"
-                                        class="text-[10px] font-bold text-blue-600 hover:text-blue-800 transition flex-shrink-0">
-                                    <i class="fa-regular fa-copy mr-1"></i>복사
+                        <div class="p-5 space-y-4">
+
+                            <!-- ① 지갑 소유권 인증 배너 -->
+                            <div id="verifyBanner" class="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                                <div class="flex items-start gap-2.5">
+                                    <i class="fa-solid fa-shield-halved text-amber-500 mt-0.5"></i>
+                                    <div class="flex-1">
+                                        <p class="text-xs font-bold text-amber-800">입금 전 지갑 소유권 인증 필요</p>
+                                        <p class="text-[11px] text-amber-700 mt-0.5 leading-relaxed">
+                                            MetaMask 서명으로 지갑을 인증하면 입금이 활성화됩니다.<br>
+                                            가스비가 발생하지 않는 안전한 서명입니다.
+                                        </p>
+                                        <button id="verifyBtn" onclick="startWalletVerify()"
+                                                class="mt-2 text-[11px] font-bold px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition flex items-center gap-1.5">
+                                            <i class="fa-solid fa-fingerprint"></i> 지갑 소유권 인증하기
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 인증 완료 배너 (기본 숨김) -->
+                            <div id="verifiedBadge" class="hidden bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                                <span class="text-xs font-bold text-emerald-700">지갑 소유권 인증 완료</span>
+                            </div>
+
+                            <!-- ② 토큰 탭 -->
+                            <div class="flex rounded-xl overflow-hidden border border-gray-200">
+                                <button id="tab-omt"  onclick="switchTab('OMT')"
+                                        class="tab-btn flex-1 py-2.5 text-xs font-bold transition bg-blue-600 text-white">
+                                    OMT
+                                </button>
+                                <button id="tab-usdt" onclick="switchTab('USDT')"
+                                        class="tab-btn flex-1 py-2.5 text-xs font-bold transition bg-white text-gray-500 hover:bg-gray-50">
+                                    USDT
+                                </button>
+                                <button id="tab-eth"  onclick="switchTab('ETH')"
+                                        class="tab-btn flex-1 py-2.5 text-xs font-bold transition bg-white text-gray-500 hover:bg-gray-50">
+                                    ETH
                                 </button>
                             </div>
-                        </div>
 
-                        <!-- 금액 입력 -->
-                        <div class="mb-3">
-                            <label class="text-sm font-semibold text-gray-700 mb-1.5 block">입금 금액 (OMT)</label>
-                            <div class="relative">
-                                <input type="number" id="depositAmount" placeholder="0.0" min="1" step="1"
-                                       class="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent">
-                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">OMT</span>
+                            <!-- ③ 입금 주소 -->
+                            <div class="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">입금 주소 (KMS 서버 지갑)</p>
+                                <div class="flex items-center gap-2">
+                                    <p class="text-xs font-mono text-gray-700 flex-1 truncate" id="depositServerAddr">조회 중...</p>
+                                    <button onclick="copyServerAddr()"
+                                            class="text-[10px] font-bold text-blue-600 hover:text-blue-800 transition flex-shrink-0">
+                                        <i class="fa-regular fa-copy mr-1"></i>복사
+                                    </button>
+                                </div>
                             </div>
-                            <div class="flex gap-2 mt-2">
-                                <button onclick="setAmount(10)"  class="flex-1 text-[11px] font-bold py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-gray-600">10</button>
-                                <button onclick="setAmount(50)"  class="flex-1 text-[11px] font-bold py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-gray-600">50</button>
-                                <button onclick="setAmount(100)" class="flex-1 text-[11px] font-bold py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-gray-600">100</button>
-                                <button onclick="setAmount(500)" class="flex-1 text-[11px] font-bold py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-gray-600">500</button>
+
+                            <!-- ④ 금액 입력 -->
+                            <div>
+                                <label class="text-sm font-semibold text-gray-700 mb-1.5 block">
+                                    입금 금액 <span id="tokenLabel" class="text-blue-600">(OMT)</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="number" id="depositAmount" placeholder="0.0" min="0" step="any"
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 font-bold
+                                                  focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent">
+                                    <span id="tokenUnit" class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">OMT</span>
+                                </div>
+                                <!-- 빠른 금액 선택 -->
+                                <div id="quickAmounts" class="flex gap-2 mt-2">
+                                    <button onclick="setAmount(10)"    class="flex-1 text-[11px] font-bold py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-gray-600">10</button>
+                                    <button onclick="setAmount(50)"    class="flex-1 text-[11px] font-bold py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-gray-600">50</button>
+                                    <button onclick="setAmount(100)"   class="flex-1 text-[11px] font-bold py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-gray-600">100</button>
+                                    <button onclick="setAmount(500)"   class="flex-1 text-[11px] font-bold py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-gray-600">500</button>
+                                </div>
+                                <!-- ETH 전용 소수점 버튼 -->
+                                <div id="quickAmountsEth" class="hidden flex gap-2 mt-2">
+                                    <button onclick="setAmount(0.001)" class="flex-1 text-[11px] font-bold py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-gray-600">0.001</button>
+                                    <button onclick="setAmount(0.01)"  class="flex-1 text-[11px] font-bold py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-gray-600">0.01</button>
+                                    <button onclick="setAmount(0.1)"   class="flex-1 text-[11px] font-bold py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-gray-600">0.1</button>
+                                    <button onclick="setAmount(0.5)"   class="flex-1 text-[11px] font-bold py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-gray-600">0.5</button>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- 입금하기 버튼 -->
-                        <button id="depositBtn" onclick="startDeposit()"
-                                class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition shadow-md font-bold text-sm flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-wallet"></i> MetaMask로 입금하기
-                        </button>
+                            <!-- ⑤ 입금하기 버튼 -->
+                            <button id="depositBtn" onclick="startDeposit()"
+                                    class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl
+                                           transition shadow-md font-bold text-sm flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-wallet"></i> MetaMask로 입금하기
+                            </button>
 
-                        <!-- 상태 표시 -->
-                        <div id="depositStatus" class="hidden mt-4 rounded-xl p-3 text-sm font-medium"></div>
+                            <!-- ⑥ 상태 표시 -->
+                            <div id="depositStatus" class="hidden rounded-xl p-3 text-sm font-medium"></div>
 
-                        <!-- 입금 내역 (최근 3건) -->
-                        <div class="mt-4">
-                            <p class="text-xs font-bold text-gray-400 uppercase mb-2">최근 입금 내역</p>
-                            <div id="depositHistory" class="space-y-1.5">
-                                <p class="text-xs text-gray-400 text-center py-2">내역 없음</p>
+                            <!-- ⑦ 내 잔고 요약 -->
+                            <div class="bg-gray-50 border border-gray-100 rounded-xl p-3">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">플랫폼 내 잔고</p>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div class="text-center">
+                                        <p class="text-[10px] text-gray-400">OMT</p>
+                                        <p class="text-xs font-black text-gray-800" id="balOmt">—</p>
+                                    </div>
+                                    <div class="text-center border-x border-gray-200">
+                                        <p class="text-[10px] text-gray-400">USDT</p>
+                                        <p class="text-xs font-black text-gray-800" id="balUsdt">—</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-[10px] text-gray-400">ETH</p>
+                                        <p class="text-xs font-black text-gray-800" id="balEth">—</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ⑧ 최근 입금 내역 -->
+                            <div>
+                                <p class="text-xs font-bold text-gray-400 uppercase mb-2">최근 입금</p>
+                                <div id="depositHistory" class="space-y-1.5">
+                                    <p class="text-xs text-gray-400 text-center py-2">내역 없음</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -325,50 +399,67 @@
         });
 
         // =============================================
-        // 비수탁형 OMT 입금 (MetaMask 직접 서명)
+        // 비수탁형 입금 (MetaMask 직접 서명)
+        // OMT · USDT · ETH 지원
         // =============================================
 
         let serverWalletAddress = '';
         let omtContractAddress  = '';
+        let usdtContractAddress = '';
+        let currentToken        = 'OMT';   // 현재 선택된 탭
         const depositHistoryList = [];
 
-        // ERC-20 transfer(address,uint256) ABI
-        const ERC20_ABI = [
-            {
-                "name": "transfer",
-                "type": "function",
-                "inputs": [
-                    { "name": "_to",    "type": "address" },
-                    { "name": "_value", "type": "uint256" }
-                ],
-                "outputs": [{ "name": "", "type": "bool" }]
-            }
-        ];
-
-        // 페이지 로드 시 서버 지갑 주소 조회 + SSE 구독
+        // 페이지 로드 시
         (async () => {
             await loadServerAddress();
             subscribeDepositStream();
         })();
 
+        // ── 서버 주소 + 잔고 조회 ──────────────────────────────
         async function loadServerAddress() {
             try {
                 const res = await fetch('/api/deposit/server-address');
                 if (!res.ok) return;
                 const d = await res.json();
-                serverWalletAddress = d.serverAddress || '';
-                omtContractAddress  = d.omtContract   || '';
+
+                serverWalletAddress = d.serverAddress  || '';
+                omtContractAddress  = d.omtContract    || '';
+                usdtContractAddress = d.usdtContract   || '';
 
                 const el = document.getElementById('depositServerAddr');
-                if (serverWalletAddress) {
-                    el.textContent = serverWalletAddress.slice(0,10) + '···' + serverWalletAddress.slice(-8);
-                    el.title       = serverWalletAddress;
-                } else {
-                    el.textContent = 'KMS 지갑 미설정';
-                }
+                el.textContent = serverWalletAddress
+                    ? serverWalletAddress.slice(0,10) + '···' + serverWalletAddress.slice(-8)
+                    : 'KMS 지갑 미설정';
+                if (serverWalletAddress) el.title = serverWalletAddress;
+
+                // 잔고 표시
+                document.getElementById('balOmt').textContent  = parseFloat(d.omtBalance  || 0).toLocaleString() + ' OMT';
+                document.getElementById('balUsdt').textContent = parseFloat(d.usdtBalance || 0).toLocaleString() + ' USDT';
+                document.getElementById('balEth').textContent  = parseFloat(d.ethDepositBalance || 0).toFixed(4) + ' ETH';
+
+                // 지갑 인증 상태 UI
+                if (d.walletVerified) showVerifiedState();
+
             } catch (e) {
                 console.warn('[Deposit] 서버 주소 조회 실패:', e.message);
             }
+        }
+
+        // ── 탭 전환 ───────────────────────────────────────────
+        function switchTab(token) {
+            currentToken = token;
+            ['OMT','USDT','ETH'].forEach(t => {
+                const btn = document.getElementById('tab-' + t.toLowerCase());
+                btn.className = 'tab-btn flex-1 py-2.5 text-xs font-bold transition ' +
+                    (t === token ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50');
+            });
+            document.getElementById('tokenLabel').textContent = '(' + token + ')';
+            document.getElementById('tokenUnit').textContent  = token;
+            document.getElementById('depositAmount').value    = '';
+
+            // ETH 전용 빠른 금액 버튼
+            document.getElementById('quickAmounts').classList.toggle('hidden', token === 'ETH');
+            document.getElementById('quickAmountsEth').classList.toggle('hidden', token !== 'ETH');
         }
 
         function copyServerAddr() {
@@ -378,142 +469,186 @@
                 .catch(() => {});
         }
 
-        function setAmount(v) {
-            document.getElementById('depositAmount').value = v;
-        }
+        function setAmount(v) { document.getElementById('depositAmount').value = v; }
 
-        async function startDeposit() {
-            // ── 1. 사전 검사 ──────────────────────────────
-            if (!window.ethereum) {
+        // ── 지갑 소유권 인증 (SIWE) ────────────────────────────
+        async function startWalletVerify() {
+            if (!window.ethereum)
                 return showDepositStatus('error', 'MetaMask가 설치되어 있지 않습니다.');
-            }
-            if (!serverWalletAddress) {
-                return showDepositStatus('error', '서버 지갑 주소를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.');
-            }
-            if (!omtContractAddress || omtContractAddress === 'none') {
-                return showDepositStatus('error', 'OMT 컨트랙트 주소가 설정되지 않았습니다.');
-            }
 
-            const amtInput = parseFloat(document.getElementById('depositAmount').value);
-            if (!amtInput || amtInput <= 0) {
-                return showDepositStatus('error', '입금할 금액을 입력해 주세요.');
-            }
-
-            setDepositBtn(true);
-            showDepositStatus('info', 'MetaMask 팝업을 확인해 주세요...');
+            const verifyBtn = document.getElementById('verifyBtn');
+            verifyBtn.disabled = true;
+            verifyBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 처리 중...';
 
             try {
-                // ── 2. MetaMask 계정 요청 ────────────────────
+                // 1. 챌린지 메시지 발급
+                const chalRes  = await fetch('/api/deposit/wallet-challenge');
+                const chalData = await chalRes.json();
+
+                if (chalData.alreadyVerified) {
+                    showVerifiedState();
+                    return;
+                }
+
+                const challenge = chalData.challenge;
+
+                // 2. MetaMask 계정 요청
                 const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-                const userAddr = accounts[0];
+                const addr      = accounts[0];
 
-                // ── 3. ERC-20 transfer calldata 인코딩 ───────
-                //    transfer(address _to, uint256 _value)
-                //    selector: a9059cbb
-                const selector  = 'a9059cbb';
-                const paddedTo  = serverWalletAddress.replace('0x','').toLowerCase().padStart(64, '0');
-                // OMT = 18 decimals: amount × 10^18
-                const amtWei    = BigInt(Math.floor(amtInput)) * BigInt('1000000000000000000');
-                const paddedAmt = amtWei.toString(16).padStart(64, '0');
-                const calldata  = '0x' + selector + paddedTo + paddedAmt;
+                showDepositStatus('info', 'MetaMask에서 서명 요청을 확인해 주세요. (가스비 없음)');
 
-                // ── 4. 트랜잭션 파라미터 ──────────────────────
-                const txParams = {
-                    from: userAddr,
-                    to:   omtContractAddress,   // OMT 컨트랙트로 전송
-                    data: calldata,
-                    // gas는 MetaMask가 자동 추정
-                };
-
-                showDepositStatus('info', '트랜잭션 서명 중... MetaMask 팝업을 승인해 주세요.');
-
-                // ── 5. MetaMask로 서명 & 전송 ─────────────────
-                const txHash = await ethereum.request({
-                    method: 'eth_sendTransaction',
-                    params: [txParams]
+                // 3. personal_sign — MetaMask 팝업 (가스비 없음)
+                const signature = await ethereum.request({
+                    method: 'personal_sign',
+                    params: [challenge, addr]
                 });
 
-                showDepositStatus('pending',
-                    `<i class="fa-solid fa-spinner fa-spin mr-1"></i>트랜잭션 전송 완료. 블록체인 확인 중...<br>
-                     <a href="https://sepolia.etherscan.io/tx/${txHash}" target="_blank"
-                        class="text-blue-600 underline text-xs">${txHash.slice(0,16)}···</a>`);
-
-                // ── 6. 서버에 txHash 제출 → 검증 요청 ─────────
-                // 채굴 대기 (약 15초)
-                await waitForReceipt(txHash);
-
-                const verifyRes = await fetch('/api/deposit/verify', {
+                // 4. 서버에 서명 제출
+                const verRes  = await fetch('/api/deposit/wallet-verify', {
                     method:  'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body:    JSON.stringify({ txHash, amount: String(amtInput) })
+                    body:    JSON.stringify({ signature, address: addr })
                 });
-                const result = await verifyRes.json();
+                const verData = await verRes.json();
+
+                if (verData.success) {
+                    showVerifiedState();
+                    showDepositStatus('success',
+                        '<i class="fa-solid fa-circle-check mr-1"></i>' + verData.message);
+                } else {
+                    showDepositStatus('error', '인증 실패: ' + verData.message);
+                    verifyBtn.disabled = false;
+                    verifyBtn.innerHTML = '<i class="fa-solid fa-fingerprint"></i> 재시도';
+                }
+
+            } catch (e) {
+                if (e.code === 4001) showDepositStatus('error', '서명을 취소했습니다.');
+                else showDepositStatus('error', '오류: ' + e.message);
+                verifyBtn.disabled = false;
+                verifyBtn.innerHTML = '<i class="fa-solid fa-fingerprint"></i> 재시도';
+            }
+        }
+
+        function showVerifiedState() {
+            document.getElementById('verifyBanner').classList.add('hidden');
+            document.getElementById('verifiedBadge').classList.remove('hidden');
+        }
+
+        // ── 입금 실행 ──────────────────────────────────────────
+        async function startDeposit() {
+            if (!window.ethereum)
+                return showDepositStatus('error', 'MetaMask가 설치되어 있지 않습니다.');
+            if (!serverWalletAddress)
+                return showDepositStatus('error', '서버 지갑 주소를 불러오지 못했습니다.');
+
+            const amtInput = parseFloat(document.getElementById('depositAmount').value);
+            if (!amtInput || amtInput <= 0)
+                return showDepositStatus('error', '입금할 금액을 입력해 주세요.');
+
+            setDepositBtn(true);
+
+            try {
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                const userAddr  = accounts[0];
+
+                let txHash;
+
+                if (currentToken === 'ETH') {
+                    // ── ETH 네이티브 전송 ──
+                    const weiHex = '0x' + (BigInt(Math.round(amtInput * 1e9)) * BigInt(1e9)).toString(16);
+                    showDepositStatus('info', 'MetaMask ETH 전송 팝업을 승인해 주세요...');
+                    txHash = await ethereum.request({
+                        method: 'eth_sendTransaction',
+                        params: [{ from: userAddr, to: serverWalletAddress, value: weiHex }]
+                    });
+
+                } else {
+                    // ── ERC-20 (OMT / USDT) ──
+                    const contractAddr = currentToken === 'USDT' ? usdtContractAddress : omtContractAddress;
+                    if (!contractAddr || contractAddr === 'none')
+                        return showDepositStatus('error', currentToken + ' 컨트랙트 주소가 설정되지 않았습니다.');
+
+                    const decimals  = currentToken === 'USDT' ? 6 : 18;
+                    const amtBig    = BigInt(Math.round(amtInput * Math.pow(10, decimals)));
+                    const selector  = 'a9059cbb';
+                    const paddedTo  = serverWalletAddress.replace('0x','').padStart(64,'0');
+                    const paddedAmt = amtBig.toString(16).padStart(64,'0');
+                    const calldata  = '0x' + selector + paddedTo + paddedAmt;
+
+                    showDepositStatus('info', 'MetaMask ' + currentToken + ' 전송 팝업을 승인해 주세요...');
+                    txHash = await ethereum.request({
+                        method: 'eth_sendTransaction',
+                        params: [{ from: userAddr, to: contractAddr, data: calldata }]
+                    });
+                }
+
+                showDepositStatus('pending',
+                    `<i class="fa-solid fa-spinner fa-spin mr-1"></i>전송 완료. 블록체인 확인 중...<br>
+                     <a href="https://sepolia.etherscan.io/tx/${txHash}" target="_blank"
+                        class="text-blue-600 underline text-xs font-mono">${txHash.slice(0,16)}···</a>`);
+
+                // 채굴 대기
+                await waitForReceipt(txHash);
+
+                // 서버 검증
+                const verRes = await fetch('/api/deposit/verify', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ txHash, amount: String(amtInput), token: currentToken })
+                });
+                const result = await verRes.json();
 
                 if (result.success) {
                     showDepositStatus('success',
                         `<i class="fa-solid fa-circle-check mr-1"></i>
-                         <strong>${result.amount} OMT</strong> 입금이 완료됐습니다!<br>
-                         <span class="text-xs">새 잔액: ${result.newBalance} OMT</span>`);
-                    addDepositHistory(txHash, result.amount);
+                         <strong>${result.amount} ${currentToken}</strong> 입금 완료!<br>
+                         <span class="text-xs">새 잔액: ${result.newBalance} ${currentToken}</span>`);
+                    addDepositHistory(txHash, result.amount, currentToken);
                     document.getElementById('depositAmount').value = '';
-                    loadDashboard(); // 자산 카드 새로고침
+                    await loadServerAddress(); // 잔고 갱신
+                    loadDashboard();
                 } else {
-                    showDepositStatus('error',
-                        `검증 실패: ${result.message}`);
+                    showDepositStatus('error', '검증 실패: ' + result.message);
                 }
 
             } catch (e) {
-                if (e.code === 4001) {
-                    showDepositStatus('error', '사용자가 MetaMask 서명을 취소했습니다.');
-                } else {
-                    showDepositStatus('error', '오류: ' + e.message);
-                    console.error('[Deposit]', e);
-                }
+                if (e.code === 4001) showDepositStatus('error', 'MetaMask 서명을 취소했습니다.');
+                else { showDepositStatus('error', '오류: ' + e.message); console.error('[Deposit]', e); }
             } finally {
                 setDepositBtn(false);
             }
         }
 
-        // MetaMask가 receipt를 반환할 때까지 폴링
+        // receipt 폴링
         function waitForReceipt(txHash, maxRetry = 20, intervalMs = 3000) {
-            return new Promise((resolve, reject) => {
+            return new Promise(resolve => {
                 let tries = 0;
                 const poll = setInterval(async () => {
                     tries++;
                     try {
-                        const receipt = await ethereum.request({
-                            method: 'eth_getTransactionReceipt',
-                            params: [txHash]
+                        const r = await ethereum.request({
+                            method: 'eth_getTransactionReceipt', params: [txHash]
                         });
-                        if (receipt) {
-                            clearInterval(poll);
-                            resolve(receipt);
-                        }
-                    } catch (e) { /* 아직 pending */ }
-                    if (tries >= maxRetry) {
-                        clearInterval(poll);
-                        resolve(null); // 타임아웃 → 그냥 서버에 넘김
-                    }
+                        if (r) { clearInterval(poll); resolve(r); }
+                    } catch (e) {}
+                    if (tries >= maxRetry) { clearInterval(poll); resolve(null); }
                 }, intervalMs);
             });
         }
 
-        // ── SSE: 서버 입금 감지 실시간 수신 ──────────────────
+        // SSE
         function subscribeDepositStream() {
             if (!window.EventSource) return;
-            const evtSrc = new EventSource('/api/deposit/stream');
-
-            evtSrc.addEventListener('deposit', (e) => {
+            const src = new EventSource('/api/deposit/stream');
+            src.addEventListener('deposit', e => {
                 const d = JSON.parse(e.data);
                 showDepositStatus('success',
                     `<i class="fa-solid fa-bell mr-1"></i>${d.message}`);
-                addDepositHistory(d.txHash, d.amount);
+                addDepositHistory(d.txHash, d.amount, d.tokenType || 'OMT');
                 loadDashboard();
+                loadServerAddress();
             });
-
-            evtSrc.onerror = () => {
-                // 자동 재연결 (브라우저 기본 동작)
-            };
         }
 
         // ── UI 헬퍼 ──────────────────────────────────────────
@@ -526,7 +661,7 @@
                 pending: 'bg-amber-50 border border-amber-200 text-amber-800',
                 info:    'bg-blue-50 border border-blue-200 text-blue-800',
             };
-            el.className = `mt-4 rounded-xl p-3 text-sm font-medium ${styles[type] || styles.info}`;
+            el.className = 'rounded-xl p-3 text-sm font-medium ' + (styles[type] || styles.info);
             el.innerHTML = html;
         }
 
@@ -536,26 +671,24 @@
             btn.innerHTML = loading
                 ? '<i class="fa-solid fa-spinner fa-spin mr-1"></i> 처리 중...'
                 : '<i class="fa-solid fa-wallet mr-1"></i> MetaMask로 입금하기';
-            btn.className = `w-full py-3.5 rounded-xl transition shadow-md font-bold text-sm flex items-center justify-center gap-2 text-white ${
-                loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-            }`;
+            btn.className = `w-full py-3.5 rounded-xl transition shadow-md font-bold text-sm
+                             flex items-center justify-center gap-2 text-white
+                             ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`;
         }
 
-        function addDepositHistory(txHash, amount) {
-            depositHistoryList.unshift({ txHash, amount, time: new Date() });
+        function addDepositHistory(txHash, amount, token) {
+            depositHistoryList.unshift({ txHash, amount, token, time: new Date() });
             if (depositHistoryList.length > 5) depositHistoryList.pop();
-
-            const container = document.getElementById('depositHistory');
-            container.innerHTML = depositHistoryList.map(h => `
+            const tokenColor = { OMT:'text-blue-600', USDT:'text-emerald-600', ETH:'text-slate-600' };
+            document.getElementById('depositHistory').innerHTML = depositHistoryList.map(h => `
                 <div class="flex items-center justify-between text-xs py-1.5 px-2 bg-white rounded-lg border border-gray-100">
                     <div class="flex items-center gap-1.5">
                         <i class="fa-solid fa-circle-check text-emerald-500 text-[10px]"></i>
                         <a href="https://sepolia.etherscan.io/tx/${h.txHash}" target="_blank"
                            class="font-mono text-blue-500 hover:underline">${h.txHash.slice(0,10)}···</a>
                     </div>
-                    <span class="font-bold text-gray-700">+${h.amount} OMT</span>
-                </div>
-            `).join('');
+                    <span class="font-bold ${tokenColor[h.token] || 'text-gray-700'}">+${h.amount} ${h.token}</span>
+                </div>`).join('');
         }
     </script>
 </body>

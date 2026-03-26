@@ -34,7 +34,16 @@ public class Member {
     // 운영 DB에서는 직접 ALTER TABLE member DROP COLUMN private_key; 실행 권장
 
     //db상의 omt 잔고
-    private  java.math.BigDecimal omtBalance;
+    private java.math.BigDecimal omtBalance;
+
+    // 입금된 USDT/USDC 잔고 (플랫폼 내부 단위)
+    private java.math.BigDecimal usdtBalance;
+
+    // 입금된 ETH 잔고 (플랫폼 내부 단위, Wei가 아닌 ETH 단위)
+    private java.math.BigDecimal ethDepositBalance;
+
+    // 지갑 소유권 인증 완료 여부 (personal_sign SIWE 검증)
+    private Boolean walletVerified = false;
     
     private Long verifiedCases = 0L;
     
