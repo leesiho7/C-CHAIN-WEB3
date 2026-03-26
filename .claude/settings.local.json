@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find C:/Users/user/git/ESTCAMP-cchain-web3-project -name *.py)"
+    ]
+  }
+}
