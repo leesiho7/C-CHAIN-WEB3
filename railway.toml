@@ -4,7 +4,7 @@ builder = "NIXPACKS"
 buildCommand = "MAVEN_OPTS='-Xmx1g -XX:MaxMetaspaceSize=256m -XX:+UseG1GC' ./mvnw package -DskipTests -q"
 
 [deploy]
-# 런타임은 절약 — 512m 고정 + SerialGC (소형 힙에서 오버헤드 최소)
-startCommand = "java -XX:+UseSerialGC -Xmx512m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=64m -Djava.security.egd=file:/dev/./urandom -jar target/cchain-0.1.jar"
+# G1GC: 주기적으로 힙을 조금씩 회수 → 우상향 없이 메모리 안정적 유지
+startCommand = "java -XX:+UseG1GC -Xmx512m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=64m -XX:MaxHeapFreeRatio=30 -XX:MinHeapFreeRatio=10 -Djava.security.egd=file:/dev/./urandom -jar target/cchain-0.1.jar"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
