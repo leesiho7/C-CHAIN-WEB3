@@ -1,10 +1,12 @@
 package com.tem.cchain.controller;
 
+import com.tem.cchain.dto.KeysetPage;
 import com.tem.cchain.entity.IndexerState;
 import com.tem.cchain.entity.OmtTransaction;
 import com.tem.cchain.repository.IndexerStateRepository;
 import com.tem.cchain.repository.OmtTransactionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,16 +19,35 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OmtIndexerController {
 
+    private static final int DEFAULT_LIMIT = 20;
+    private static final int MAX_LIMIT = 50;
+
     private final OmtTransactionRepository txRepository;
     private final IndexerStateRepository stateRepository;
 
     /**
-     * 1. 최근 거래 내역 조회 — 최대 100건 (blockNumber DESC)
-     * DB LIMIT으로 처리해 in-memory 슬라이딩 없이 메모리 안전.
+     * 1. 최근 거래 내역 조회 — Keyset 페이지네이션
+     * ?limit=20           → 최신 N건
+     * ?limit=20&before=42 → id < 42 인 최신 N건 (다음 페이지)
      */
     @GetMapping("/recent")
-    public ResponseEntity<List<OmtTransaction>> getRecentTransactions() {
-        return ResponseEntity.ok(txRepository.findTop100ByOrderByBlockNumberDesc());
+    public ResponseEntity<KeysetPage<OmtTransaction>> getRecentTransactions(
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(required = false) Long before) {
+
+        int safeLimit = Math.min(limit, MAX_LIMIT);
+        // +1 로 다음 페이지 존재 여부 확인
+        var pageable = PageRequest.of(0, safeLimit + 1);
+
+        List<OmtTransaction> rows = (before != null)
+                ? txRepository.findByIdLessThanOrderByIdDesc(before, pageable)
+                : txRepository.findByOrderByIdDesc(pageable);
+
+        boolean hasMore = rows.size() > safeLimit;
+        if (hasMore) rows = rows.subList(0, safeLimit);
+        Long nextCursor = hasMore ? rows.get(rows.size() - 1).getId() : null;
+
+        return ResponseEntity.ok(new KeysetPage<>(rows, hasMore, nextCursor));
     }
 
     /**
@@ -51,11 +72,27 @@ public class OmtIndexerController {
     }
 
     /**
-     * 3. 특정 주소의 거래 내역 검색 — 최대 50건
+     * 3. 특정 주소의 거래 내역 검색 — Keyset 페이지네이션
+     * ?limit=20           → 최신 N건
+     * ?limit=20&before=42 → id < 42 인 최신 N건 (다음 페이지)
      */
     @GetMapping("/address/{address}")
-    public ResponseEntity<List<OmtTransaction>> getTransactionsByAddress(@PathVariable String address) {
-        return ResponseEntity.ok(
-            txRepository.findTop50ByFromAddressOrToAddressOrderByBlockNumberDesc(address, address));
+    public ResponseEntity<KeysetPage<OmtTransaction>> getTransactionsByAddress(
+            @PathVariable String address,
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(required = false) Long before) {
+
+        int safeLimit = Math.min(limit, MAX_LIMIT);
+        var pageable = PageRequest.of(0, safeLimit + 1);
+
+        List<OmtTransaction> rows = (before != null)
+                ? txRepository.findByAddressBefore(address, before, pageable)
+                : txRepository.findLatestByAddress(address, pageable);
+
+        boolean hasMore = rows.size() > safeLimit;
+        if (hasMore) rows = rows.subList(0, safeLimit);
+        Long nextCursor = hasMore ? rows.get(rows.size() - 1).getId() : null;
+
+        return ResponseEntity.ok(new KeysetPage<>(rows, hasMore, nextCursor));
     }
 }

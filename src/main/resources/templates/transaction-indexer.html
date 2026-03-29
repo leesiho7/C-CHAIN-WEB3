@@ -156,6 +156,13 @@
                                 </tbody>
                             </table>
                         </div>
+                        <!-- 더 보기 버튼 -->
+                        <div id="load-more-area" class="hidden px-6 py-4 border-t border-gray-50 text-center">
+                            <button id="load-more-btn" onclick="loadMore()"
+                                class="px-6 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-600 text-sm font-bold rounded-xl transition border border-gray-100">
+                                이전 트랜잭션 더 보기
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -163,97 +170,151 @@
     </main>
 
     <script>
-        // [1] 실시간 상태 갱신 (상단 요약 바)
+        // ── 상태 ────────────────────────────────────────────────────────────
+        let allTransactions = [];   // 현재 테이블에 표시 중인 전체 목록
+        let isLoadingMore = false;
+
+        // ── [1] 실시간 상태 갱신 (상단 요약 바) ─────────────────────────────
         async function updateStatus() {
             try {
                 const res = await fetch('/api/indexer/status');
                 if (!res.ok) return;
                 const data = await res.json();
-                
                 document.getElementById('indexed-count').innerText = data.totalTransactions.toLocaleString();
                 document.getElementById('latest-block').innerText = data.lastBlock.toLocaleString();
             } catch (e) { console.error("Status Sync Error"); }
         }
 
-        // [2] 실시간 트랜잭션 리스트 갱신
+        // ── [2] 실시간 최신 트랜잭션 폴링 ───────────────────────────────────
+        // 최신 20건을 가져와 새 항목만 테이블 상단에 추가합니다.
         async function fetchRecentTransactions() {
             try {
-                const res = await fetch('/api/indexer/recent');
+                const res = await fetch('/api/indexer/recent?limit=20');
                 if (!res.ok) return;
-                const data = await res.json();
-                
-                const tbody = document.getElementById('transactions-table');
-                
-                if (data.length === 0) {
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="5" class="px-6 py-20 text-center text-gray-400">
-                                <div class="flex flex-col items-center">
-                                    <svg class="w-10 h-10 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
-                                    </svg>
-                                    <p class="font-bold text-gray-500">인덱싱된 트랜잭션이 없습니다</p>
-                                    <p class="text-xs text-gray-400 mt-1">RPC 연결 후 블록 동기화가 완료되면 자동으로 표시됩니다.</p>
-                                </div>
-                            </td>
-                        </tr>`;
-                } else {
-                    tbody.innerHTML = data.map(tx => {
-                        // OMT 거래인 경우 강조 스타일 적용
-                        const isOMT = tx.tokenSymbol === 'OMT';
-                        const symbolColor = isOMT ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600';
-                        const amountColor = isOMT ? 'text-blue-600 font-black' : 'text-gray-900 font-bold';
+                const page = await res.json();   // { data, hasMore, nextCursor }
 
-                        return `
-                            <tr class="tx-row hover:bg-gray-50/50 transition border-b border-gray-50">
-                                <td class="px-6 py-4">
-                                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-black tracking-tighter ${symbolColor}">
-                                        ${tx.tokenSymbol}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-xs font-mono text-gray-400">${tx.txHash.slice(0, 6)}...</span>
-                                        <a href="https://sepolia.etherscan.io/tx/${tx.txHash}" target="_blank" class="text-blue-500 hover:text-blue-700">
-                                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="text-[11px] font-mono text-gray-500">
-                                        <span class="text-blue-400">F:</span> ${tx.fromAddress.slice(0, 8)}...<br>
-                                        <span class="text-purple-400">T:</span> ${tx.toAddress.slice(0, 8)}...
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <p class="text-sm ${amountColor}">
-                                        ${(parseInt(tx.value) / 10**18).toFixed(4)} <span class="text-[10px] opacity-60">${tx.tokenSymbol}</span>
-                                    </p>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="text-[10px] text-gray-400">
-                                        <p class="font-bold text-gray-600">${new Date(tx.createdAt).toLocaleTimeString()}</p>
-                                        <p>Block #${tx.blockNumber}</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                    }).join('');
+                if (allTransactions.length === 0) {
+                    // 최초 로드
+                    allTransactions = page.data;
+                } else {
+                    // 이미 알고 있는 최대 id 보다 큰 것만 앞에 추가
+                    const maxKnownId = allTransactions[0].id;
+                    const newTxs = page.data.filter(t => t.id > maxKnownId);
+                    if (newTxs.length > 0) {
+                        allTransactions = [...newTxs, ...allTransactions];
+                    }
                 }
+
+                renderTable();
+                updateLoadMoreBtn(page.hasMore);
             } catch (e) { console.error("Table Sync Error"); }
         }
 
-        // [3] 초기 실행 및 인터벌 설정
-        // 유료 플랜이므로 3초마다 아주 빠르게 갱신해도 거뜬합니다!
+        // ── [3] 더 보기 (이전 페이지 로드) ──────────────────────────────────
+        async function loadMore() {
+            if (isLoadingMore || allTransactions.length === 0) return;
+            isLoadingMore = true;
+
+            const btn = document.getElementById('load-more-btn');
+            btn.textContent = '불러오는 중...';
+            btn.disabled = true;
+
+            try {
+                const minId = allTransactions[allTransactions.length - 1].id;
+                const res = await fetch(`/api/indexer/recent?limit=20&before=${minId}`);
+                if (!res.ok) return;
+                const page = await res.json();
+
+                allTransactions = [...allTransactions, ...page.data];
+                renderTable();
+                updateLoadMoreBtn(page.hasMore);
+            } catch (e) {
+                console.error("Load More Error");
+            } finally {
+                isLoadingMore = false;
+                btn.textContent = '이전 트랜잭션 더 보기';
+                btn.disabled = false;
+            }
+        }
+
+        // ── 렌더링 헬퍼 ─────────────────────────────────────────────────────
+        function renderTable() {
+            const tbody = document.getElementById('transactions-table');
+
+            if (allTransactions.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-20 text-center text-gray-400">
+                            <div class="flex flex-col items-center">
+                                <svg class="w-10 h-10 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                                </svg>
+                                <p class="font-bold text-gray-500">인덱싱된 트랜잭션이 없습니다</p>
+                                <p class="text-xs text-gray-400 mt-1">RPC 연결 후 블록 동기화가 완료되면 자동으로 표시됩니다.</p>
+                            </div>
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            tbody.innerHTML = allTransactions.map((tx, idx) => {
+                const isOMT = tx.tokenSymbol === 'OMT';
+                const symbolColor = isOMT ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600';
+                const amountColor = isOMT ? 'text-blue-600 font-black' : 'text-gray-900 font-bold';
+                // 맨 위 행만 새 항목 강조 애니메이션
+                const rowClass = idx === 0 ? 'tx-row' : 'hover:bg-gray-50/50';
+
+                return `
+                    <tr class="${rowClass} transition border-b border-gray-50">
+                        <td class="px-6 py-4">
+                            <span class="px-2.5 py-1 rounded-lg text-[10px] font-black tracking-tighter ${symbolColor}">
+                                ${tx.tokenSymbol}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-mono text-gray-400">${tx.txHash.slice(0, 6)}...</span>
+                                <a href="https://sepolia.etherscan.io/tx/${tx.txHash}" target="_blank" class="text-blue-500 hover:text-blue-700">
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                </a>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-[11px] font-mono text-gray-500">
+                                <span class="text-blue-400">F:</span> ${tx.fromAddress.slice(0, 8)}...<br>
+                                <span class="text-purple-400">T:</span> ${tx.toAddress.slice(0, 8)}...
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="text-sm ${amountColor}">
+                                ${(parseInt(tx.value) / 10**18).toFixed(4)} <span class="text-[10px] opacity-60">${tx.tokenSymbol}</span>
+                            </p>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-[10px] text-gray-400">
+                                <p class="font-bold text-gray-600">${new Date(tx.createdAt).toLocaleTimeString()}</p>
+                                <p>Block #${tx.blockNumber}</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateLoadMoreBtn(hasMore) {
+            document.getElementById('load-more-area').classList.toggle('hidden', !hasMore);
+        }
+
+        // ── [4] 초기 실행 및 인터벌 ─────────────────────────────────────────
         updateStatus();
         fetchRecentTransactions();
-        
+
         setInterval(() => {
             updateStatus();
             fetchRecentTransactions();
-        }, 3000); 
+        }, 3000);
 
-        // 지갑 잔액 업데이트 (상단 바)
+        // ── [5] 지갑 잔액 업데이트 (상단 바) ────────────────────────────────
         async function updateTopBalance() {
             try {
                 if (typeof window.ethereum === 'undefined') return;
@@ -272,7 +333,6 @@
         }
         updateTopBalance();
 
-        // bfcache 복원 시 잔액 초기화 (로그아웃 후 이전 값 잔상 방지)
         window.addEventListener('pageshow', (e) => {
             if (e.persisted) {
                 document.getElementById('top-balance').innerText = '0.0 OMT';

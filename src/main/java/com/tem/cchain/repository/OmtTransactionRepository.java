@@ -1,6 +1,7 @@
 package com.tem.cchain.repository;
 
 import com.tem.cchain.entity.OmtTransaction;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -25,6 +26,22 @@ public interface OmtTransactionRepository extends JpaRepository<OmtTransaction, 
     // 4. 특정 주소 최근 50건
     List<OmtTransaction> findTop50ByFromAddressOrToAddressOrderByBlockNumberDesc(
             String fromAddress, String toAddress);
+
+    // ── Keyset 페이지네이션 ──────────────────────────────────────────────────
+
+    // 5-a. 최신 N건 (커서 없음)
+    List<OmtTransaction> findByOrderByIdDesc(Pageable pageable);
+
+    // 5-b. 특정 id 이전 N건 (다음 페이지 / 더 보기)
+    List<OmtTransaction> findByIdLessThanOrderByIdDesc(Long beforeId, Pageable pageable);
+
+    // 5-c. 특정 주소 최신 N건 (커서 없음)
+    @Query("SELECT t FROM OmtTransaction t WHERE t.fromAddress = :addr OR t.toAddress = :addr ORDER BY t.id DESC")
+    List<OmtTransaction> findLatestByAddress(@Param("addr") String addr, Pageable pageable);
+
+    // 5-d. 특정 주소 + id 이전 N건
+    @Query("SELECT t FROM OmtTransaction t WHERE (t.fromAddress = :addr OR t.toAddress = :addr) AND t.id < :beforeId ORDER BY t.id DESC")
+    List<OmtTransaction> findByAddressBefore(@Param("addr") String addr, @Param("beforeId") Long beforeId, Pageable pageable);
 
     // 5. 오늘 발생한 총 전송 횟수
     @Query("SELECT COUNT(t) FROM OmtTransaction t WHERE t.createdAt >= CURRENT_DATE")
