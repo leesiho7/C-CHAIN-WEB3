@@ -108,6 +108,7 @@
     </div>
 
     <script>
+        let walletAddress = null; // 전역 변수로 선언!
         let myChart, candleChart, candleSeries, ws;
         let currentEthPrice = 0;
         let currentOmtBalance = 0;
@@ -141,7 +142,7 @@
                     document.getElementById('detailBalance').innerText = formatted + " OMT";
                     updateAssetChart(currentOmtBalance);
                 }
-                connectWebSocket();
+                if(!ws) connectWebSocket(); // 소켓이 없을 때만 연결
             } catch (error) { console.error("초기화 오류:", error); }
         }
 
