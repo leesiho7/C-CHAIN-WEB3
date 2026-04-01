@@ -36,7 +36,8 @@ import java.util.Properties;
 @EnableJpaRepositories(
         basePackages = {
             "com.tem.cchain.repository",
-            "com.tem.cchain.wallet.audit"   // AuditRepository 스캔 추가
+            "com.tem.cchain.wallet.audit",     // AuditRepository
+            "com.tem.cchain.wallet.security"   // SecurityAuditLogRepository
         },
         entityManagerFactoryRef = "mysqlEntityManagerFactory",
         transactionManagerRef = "mysqlTransactionManager"
@@ -98,7 +99,8 @@ public class MySqlDataSourceConfig {
         em.setDataSource(dataSource);
         em.setPackagesToScan(
             "com.tem.cchain.entity",
-            "com.tem.cchain.wallet.audit"   // AuditEvent 엔티티 스캔 추가
+            "com.tem.cchain.wallet.audit",     // AuditEvent 엔티티
+            "com.tem.cchain.wallet.security"   // SecurityAuditLog 엔티티
         );
         em.setPersistenceUnitName("mysql");
 
