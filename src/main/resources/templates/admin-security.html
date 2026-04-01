@@ -10,226 +10,248 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         * { font-family: 'Inter', sans-serif; }
 
-        /* 위험점수 게이지 바 */
-        .risk-bar { transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+        /* ── 고위험 행 강조 ─────────────────────────────── */
+        .row-high-risk {
+            background: #fff1f2 !important;
+            border-left: 3px solid #f43f5e;
+        }
+        .row-high-risk:hover { background: #ffe4e6 !important; }
 
-        /* 테이블 행 호버 */
-        .log-row { cursor: pointer; transition: background 0.12s; }
-        .log-row:hover { background: rgba(99,102,241,0.06); }
+        /* ── 일반 행 ──────────────────────────────────── */
+        .log-row { cursor: pointer; transition: background 0.1s; }
+        .log-row:hover { background: #f8fafc; }
 
-        /* 팝업 오버레이 */
-        #detailModal { transition: opacity 0.18s; }
+        /* ── 위험점수 게이지 ─────────────────────────── */
+        .risk-bar { transition: width 0.5s ease; }
 
-        /* 팝업 카드 슬라이드 */
+        /* ── 모달 애니메이션 ─────────────────────────── */
+        #detailModal { transition: opacity 0.15s; }
         #modalCard {
-            transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), opacity 0.18s;
+            transition: transform 0.2s cubic-bezier(0.34,1.4,0.64,1), opacity 0.15s;
         }
-        #modalCard.hidden-state {
-            transform: translateY(24px) scale(0.97);
-            opacity: 0;
+        #modalCard.modal-hidden { transform: translateY(20px) scale(0.97); opacity: 0; }
+
+        /* ── 폴링 카운트다운 링 ─────────────────────── */
+        @keyframes countdown-ring {
+            from { stroke-dashoffset: 0; }
+            to   { stroke-dashoffset: 88; }
+        }
+        .countdown-ring {
+            stroke-dasharray: 88;
+            stroke-dashoffset: 0;
+            transform-origin: center;
+            transform: rotate(-90deg);
         }
 
-        /* 라이브 펄스 */
+        /* ── 펄스 ─────────────────────────────────── */
         @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
         .live-dot { animation: pulse-dot 2s infinite; }
 
-        /* 카드 shimmer 로딩 */
-        @keyframes shimmer {
-            0%   { background-position: -400px 0; }
-            100% { background-position:  400px 0; }
-        }
-        .skeleton {
-            background: linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%);
-            background-size: 400px 100%;
-            animation: shimmer 1.4s infinite linear;
-            border-radius: 8px;
-        }
-
-        /* 스크롤바 */
+        /* ── 스크롤바 ─────────────────────────────── */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
-<body class="bg-slate-950 min-h-screen text-slate-100">
+<body class="bg-slate-50 min-h-screen text-slate-800">
 
-<!-- ═══════════════════════════════════════════════════════════
-     상단 헤더 네비게이션
-════════════════════════════════════════════════════════════ -->
-<header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-50">
+<!-- ═══════════════════════════════════════════════════════
+     헤더 네비게이션
+════════════════════════════════════════════════════════ -->
+<header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
     <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
 
-        <!-- 로고 + 타이틀 -->
-        <div class="flex items-center gap-4">
-            <div class="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-900">
+        <!-- 로고 -->
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md shadow-indigo-200">
                 <i class="fa-solid fa-shield-halved text-white text-sm"></i>
             </div>
             <div>
-                <h1 class="text-sm font-black text-white tracking-tight">
-                    C-Chain <span class="text-indigo-400">Security</span> Console
+                <h1 class="text-sm font-black text-slate-900 tracking-tight">
+                    C-Chain <span class="text-indigo-600">Security</span> Console
                 </h1>
-                <p class="text-[10px] text-slate-500 font-medium">실시간 보안 관제 센터</p>
+                <p class="text-[10px] text-slate-400 font-medium">실시간 보안 관제 센터</p>
             </div>
         </div>
 
-        <!-- 네비게이션 링크 -->
+        <!-- 네비게이션 -->
         <nav class="flex items-center gap-1">
             <a href="/admin"
-               class="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 px-3 py-2 rounded-lg transition-all">
+               class="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 hover:bg-slate-100 px-3 py-2 rounded-lg transition-all">
                 <i class="fa-solid fa-list-check"></i> 검증 관리
             </a>
             <a href="/admin/security"
-               class="flex items-center gap-1.5 text-xs font-black text-white bg-indigo-600/20 border border-indigo-500/40 px-3 py-2 rounded-lg">
+               class="flex items-center gap-1.5 text-xs font-black text-white bg-indigo-600 px-3 py-2 rounded-lg shadow-sm">
                 <i class="fa-solid fa-shield-halved"></i> 보안 관제
             </a>
             <a href="/wallet-server"
-               class="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 px-3 py-2 rounded-lg transition-all">
+               class="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 hover:bg-slate-100 px-3 py-2 rounded-lg transition-all">
                 <i class="fa-solid fa-vault"></i> 서버 지갑
             </a>
         </nav>
 
-        <!-- 우측: 라이브 상태 + 로그아웃 -->
+        <!-- 우측: 폴링 상태 + 새로고침 + 로그아웃 -->
         <div class="flex items-center gap-3">
-            <div class="flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full">
+
+            <!-- 자동 갱신 카운트다운 -->
+            <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
+                <svg width="16" height="16" viewBox="0 0 32 32">
+                    <circle cx="16" cy="16" r="14" fill="none" stroke="#e2e8f0" stroke-width="3"/>
+                    <circle id="poll-ring" cx="16" cy="16" r="14" fill="none"
+                            stroke="#6366f1" stroke-width="3" class="countdown-ring"/>
+                </svg>
+                <span id="poll-label" class="text-[10px] font-bold text-indigo-500">30s</span>
                 <div class="w-1.5 h-1.5 bg-emerald-400 rounded-full live-dot"></div>
-                <span class="text-[10px] font-bold text-emerald-400">LIVE</span>
+                <span class="text-[10px] font-bold text-slate-400">자동갱신</span>
             </div>
-            <span class="text-[10px] font-bold text-slate-500 bg-slate-800 px-3 py-1.5 rounded-full">
-                admin@cchain.com
+
+            <!-- 수동 새로고침 버튼 -->
+            <button onclick="manualRefresh()"
+                    class="flex items-center gap-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-xl hover:bg-indigo-100 transition-all">
+                <i id="refresh-icon" class="fa-solid fa-rotate-right"></i> 새로고침
+            </button>
+
+            <span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-full">
+                <i class="fa-solid fa-user-shield mr-1 text-indigo-400"></i> admin
             </span>
-            <a href="/logout" class="text-[10px] font-bold text-rose-400 hover:text-rose-300 transition">로그아웃</a>
+            <a href="/logout" class="text-[10px] font-bold text-rose-400 hover:text-rose-600 transition">로그아웃</a>
         </div>
     </div>
 </header>
 
-<!-- ═══════════════════════════════════════════════════════════
+<!-- ═══════════════════════════════════════════════════════
      메인 콘텐츠
-════════════════════════════════════════════════════════════ -->
-<main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
+════════════════════════════════════════════════════════ -->
+<main class="max-w-7xl mx-auto px-6 py-8 space-y-6">
 
     <!-- 페이지 타이틀 -->
-    <div class="flex items-end justify-between">
-        <div>
-            <h2 class="text-2xl font-black text-white mb-1">보안 관제 센터</h2>
-            <p class="text-slate-500 text-sm">FDS 이상거래 탐지, 출금 보안 게이트 감사 로그를 실시간으로 모니터링합니다.</p>
-        </div>
-        <button onclick="loadAll()" class="flex items-center gap-2 text-xs font-bold text-indigo-400 bg-indigo-950 border border-indigo-800 px-4 py-2 rounded-xl hover:bg-indigo-900 transition-all">
-            <i class="fa-solid fa-rotate-right"></i> 새로고침
-        </button>
+    <div>
+        <h2 class="text-2xl font-black text-slate-900 mb-1">보안 관제 센터</h2>
+        <p class="text-slate-500 text-sm">FDS 이상거래 탐지 및 출금 보안 게이트 감사 로그를 모니터링합니다.</p>
     </div>
 
-    <!-- ─────────────────────────────────────────────────────
-         SECTION 1: 요약 카드 (5개)
-    ───────────────────────────────────────────────────── -->
+    <!-- ────────────────────────────────────────────────────
+         SECTION 1: 요약 카드 5개
+    ──────────────────────────────────────────────────── -->
     <div class="grid grid-cols-5 gap-4">
 
-        <!-- 카드: 오늘 차단 건수 -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 col-span-1">
+        <!-- 오늘 차단 -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between mb-3">
-                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">오늘 차단</span>
-                <div class="w-7 h-7 bg-rose-500/10 rounded-lg flex items-center justify-center">
-                    <i class="fa-solid fa-ban text-rose-500 text-xs"></i>
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">오늘 차단</span>
+                <div class="w-8 h-8 bg-rose-50 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-ban text-rose-500 text-sm"></i>
                 </div>
             </div>
-            <p id="stat-blocked" class="text-3xl font-black text-rose-400">—</p>
-            <p class="text-[10px] text-slate-600 mt-1">공격 시도 차단</p>
+            <p id="stat-blocked" class="text-3xl font-black text-rose-500">—</p>
+            <p class="text-[10px] text-slate-400 mt-1 font-medium">공격 시도 차단</p>
         </div>
 
-        <!-- 카드: 승인 대기 -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 col-span-1">
+        <!-- 승인 대기 -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between mb-3">
-                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">승인 대기</span>
-                <div class="w-7 h-7 bg-amber-500/10 rounded-lg flex items-center justify-center">
-                    <i class="fa-solid fa-clock text-amber-400 text-xs"></i>
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">승인 대기</span>
+                <div class="w-8 h-8 bg-amber-50 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-clock text-amber-500 text-sm"></i>
                 </div>
             </div>
-            <p id="stat-pending" class="text-3xl font-black text-amber-400">—</p>
-            <p class="text-[10px] text-slate-600 mt-1">운영자 승인 대기</p>
+            <p id="stat-pending" class="text-3xl font-black text-amber-500">—</p>
+            <p class="text-[10px] text-slate-400 mt-1 font-medium">운영자 승인 대기</p>
         </div>
 
-        <!-- 카드: 차단된 주소 수 -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 col-span-1">
+        <!-- 차단 주소 -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between mb-3">
-                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">차단 주소</span>
-                <div class="w-7 h-7 bg-orange-500/10 rounded-lg flex items-center justify-center">
-                    <i class="fa-solid fa-address-book text-orange-400 text-xs"></i>
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">차단 주소</span>
+                <div class="w-8 h-8 bg-orange-50 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-address-book text-orange-500 text-sm"></i>
                 </div>
             </div>
-            <p id="stat-addresses" class="text-3xl font-black text-orange-400">—</p>
-            <p class="text-[10px] text-slate-600 mt-1">고유 차단 주소 수</p>
+            <p id="stat-addresses" class="text-3xl font-black text-orange-500">—</p>
+            <p class="text-[10px] text-slate-400 mt-1 font-medium">고유 차단 주소 수</p>
         </div>
 
-        <!-- 카드: 7일 고위험 탐지 -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 col-span-1">
+        <!-- 7일 고위험 -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between mb-3">
-                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">7일 고위험</span>
-                <div class="w-7 h-7 bg-purple-500/10 rounded-lg flex items-center justify-center">
-                    <i class="fa-solid fa-triangle-exclamation text-purple-400 text-xs"></i>
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">7일 고위험</span>
+                <div class="w-8 h-8 bg-purple-50 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-triangle-exclamation text-purple-500 text-sm"></i>
                 </div>
             </div>
-            <p id="stat-highrisk" class="text-3xl font-black text-purple-400">—</p>
-            <p class="text-[10px] text-slate-600 mt-1">위험점수 70↑ 탐지</p>
+            <p id="stat-highrisk" class="text-3xl font-black text-purple-500">—</p>
+            <p class="text-[10px] text-slate-400 mt-1 font-medium">위험점수 70↑ 탐지</p>
         </div>
 
-        <!-- 카드: FDS 평균 위험점수 -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 col-span-1">
+        <!-- FDS 평균점수 -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between mb-3">
-                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">FDS 평균점수</span>
-                <div class="w-7 h-7 bg-indigo-500/10 rounded-lg flex items-center justify-center">
-                    <i class="fa-solid fa-gauge-high text-indigo-400 text-xs"></i>
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">FDS 평균점수</span>
+                <div class="w-8 h-8 bg-indigo-50 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-gauge-high text-indigo-500 text-sm"></i>
                 </div>
             </div>
-            <p id="stat-avgrisk" class="text-3xl font-black text-indigo-400">—</p>
-            <p class="text-[10px] text-slate-600 mt-1">오늘 FDS 평균 점수</p>
+            <p id="stat-avgrisk" class="text-3xl font-black text-indigo-500">—</p>
+            <p class="text-[10px] text-slate-400 mt-1 font-medium">오늘 FDS 평균</p>
         </div>
     </div>
 
-    <!-- ─────────────────────────────────────────────────────
-         SECTION 2: 메인 감사 로그 테이블
-    ───────────────────────────────────────────────────── -->
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+    <!-- ────────────────────────────────────────────────────
+         SECTION 2: 감사 로그 테이블
+    ──────────────────────────────────────────────────── -->
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
 
-        <!-- 테이블 헤더 -->
-        <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <!-- 테이블 툴바 -->
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <i class="fa-solid fa-table-list text-indigo-400"></i>
-                <span class="text-sm font-black text-white">보안 감사 로그</span>
-                <span id="total-count" class="text-[10px] font-bold text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full">로딩중...</span>
+                <i class="fa-solid fa-table-list text-indigo-500"></i>
+                <span class="text-sm font-black text-slate-900">보안 감사 로그</span>
+                <span id="total-count"
+                      class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full">
+                    로딩중...
+                </span>
             </div>
-            <div class="flex items-center gap-2 text-[10px] text-slate-600">
-                <i class="fa-solid fa-circle-info"></i>
-                행을 클릭하면 상세 내용을 확인할 수 있습니다
+            <!-- 고위험 범례 -->
+            <div class="flex items-center gap-4 text-[10px] text-slate-400 font-medium">
+                <span class="flex items-center gap-1.5">
+                    <span class="inline-block w-3 h-3 rounded bg-rose-200 border-l-2 border-rose-500"></span>
+                    위험점수 80점 이상 강조
+                </span>
+                <span><i class="fa-solid fa-circle-info mr-1"></i>행 클릭 → 상세</span>
             </div>
         </div>
 
         <!-- 컬럼 헤더 -->
-        <div class="grid grid-cols-12 gap-0 px-6 py-3 bg-slate-950/50 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-800/50">
+        <div class="grid grid-cols-12 gap-0 px-6 py-3 bg-slate-50 border-b border-slate-100
+                    text-[10px] font-black text-slate-400 uppercase tracking-widest">
             <div class="col-span-2">타임스탬프</div>
-            <div class="col-span-3">요청 주체 (ID / IP)</div>
+            <div class="col-span-2">요청 주체</div>
+            <div class="col-span-1">IP</div>
             <div class="col-span-2">검사 유형</div>
             <div class="col-span-2">FDS 위험점수</div>
-            <div class="col-span-2">정책 결과</div>
-            <div class="col-span-1 text-right">상세</div>
+            <div class="col-span-2">정책 사유 (Rule)</div>
+            <div class="col-span-1 text-right">결과</div>
         </div>
 
         <!-- 로그 행 컨테이너 -->
-        <div id="log-tbody" class="divide-y divide-slate-800/50">
-            <!-- JS로 렌더링 -->
-            <div class="px-6 py-16 text-center text-slate-600 text-sm" id="log-loading">
-                <i class="fa-solid fa-circle-notch fa-spin mr-2"></i> 로딩중...
+        <div id="log-tbody" class="divide-y divide-slate-50">
+            <div class="px-6 py-16 text-center text-slate-400 text-sm">
+                <i class="fa-solid fa-circle-notch fa-spin text-indigo-400 mr-2"></i> 데이터 로딩 중...
             </div>
         </div>
 
         <!-- 페이지네이션 -->
-        <div class="px-6 py-4 border-t border-slate-800 flex items-center justify-between">
+        <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
             <button id="prev-btn" onclick="changePage(-1)"
-                    class="text-xs font-bold text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center gap-1"
+                    class="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-indigo-600
+                           disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     disabled>
                 <i class="fa-solid fa-chevron-left text-[10px]"></i> 이전
             </button>
-            <span id="page-info" class="text-[10px] text-slate-600 font-bold">— / —</span>
+            <span id="page-info" class="text-[10px] font-bold text-slate-400">— / —</span>
             <button id="next-btn" onclick="changePage(1)"
-                    class="text-xs font-bold text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition flex items-center gap-1"
+                    class="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-indigo-600
+                           disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     disabled>
                 다음 <i class="fa-solid fa-chevron-right text-[10px]"></i>
             </button>
@@ -237,407 +259,483 @@
     </div>
 </main>
 
-<!-- ═══════════════════════════════════════════════════════════
+<!-- ═══════════════════════════════════════════════════════
      상세 팝업 모달
-════════════════════════════════════════════════════════════ -->
+════════════════════════════════════════════════════════ -->
 <div id="detailModal"
-     class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0"
+     class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0"
      onclick="closeModal(event)">
 
     <div id="modalCard"
-         class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl shadow-2xl shadow-black/60 overflow-hidden hidden-state"
+         class="bg-white border border-slate-200 rounded-2xl w-full max-w-2xl shadow-2xl shadow-slate-300/50
+                overflow-hidden modal-hidden"
          onclick="event.stopPropagation()">
 
         <!-- 모달 헤더 -->
-        <div class="flex items-center justify-between px-6 py-5 border-b border-slate-800">
+        <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100">
             <div class="flex items-center gap-3">
-                <div id="modal-icon" class="w-9 h-9 rounded-xl flex items-center justify-center">
-                    <i class="fa-solid fa-shield-halved text-sm"></i>
+                <div id="modal-icon"
+                     class="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-50">
+                    <i class="fa-solid fa-shield-halved text-indigo-500 text-sm"></i>
                 </div>
                 <div>
-                    <h3 class="text-sm font-black text-white" id="modal-title">보안 이벤트 상세</h3>
-                    <p class="text-[10px] text-slate-500 font-mono" id="modal-request-id">—</p>
+                    <h3 id="modal-title" class="text-sm font-black text-slate-900">보안 이벤트 상세</h3>
+                    <p id="modal-request-id" class="text-[10px] text-slate-400 font-mono">—</p>
                 </div>
             </div>
-            <button onclick="closeModalDirect()" class="text-slate-500 hover:text-white transition text-lg">
+            <button onclick="closeModalDirect()"
+                    class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700
+                           hover:bg-slate-100 rounded-lg transition-all">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
 
         <!-- 모달 바디 -->
-        <div class="px-6 py-5 space-y-5">
+        <div class="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
 
             <!-- 기본 정보 그리드 -->
             <div class="grid grid-cols-2 gap-3">
-                <div class="bg-slate-950/60 rounded-xl p-4">
-                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">요청자</p>
-                    <p class="text-sm font-bold text-white" id="modal-caller">—</p>
-                    <p class="text-[10px] text-slate-500 font-mono mt-0.5" id="modal-ip">—</p>
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">요청자</p>
+                    <p id="modal-caller" class="text-sm font-bold text-slate-900">—</p>
+                    <p id="modal-ip"     class="text-[10px] text-slate-500 font-mono mt-0.5">—</p>
                 </div>
-                <div class="bg-slate-950/60 rounded-xl p-4">
-                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">출금 대상</p>
-                    <p class="text-xs font-bold text-indigo-300 font-mono break-all" id="modal-to">—</p>
-                    <p class="text-[10px] text-slate-500 mt-0.5" id="modal-amount">—</p>
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">출금 대상</p>
+                    <p id="modal-to"     class="text-xs font-bold text-indigo-600 font-mono break-all">—</p>
+                    <p id="modal-amount" class="text-[10px] text-slate-500 mt-0.5">—</p>
                 </div>
-                <div class="bg-slate-950/60 rounded-xl p-4">
-                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">검사 유형</p>
-                    <p class="text-sm font-bold text-white" id="modal-check-type">—</p>
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">검사 유형</p>
+                    <p id="modal-check-type" class="text-sm font-bold text-slate-900">—</p>
                 </div>
-                <div class="bg-slate-950/60 rounded-xl p-4">
-                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">타임스탬프</p>
-                    <p class="text-sm font-bold text-white" id="modal-time">—</p>
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">타임스탬프</p>
+                    <p id="modal-time" class="text-sm font-bold text-slate-900">—</p>
                 </div>
             </div>
 
             <!-- FDS 위험점수 게이지 -->
-            <div class="bg-slate-950/60 rounded-xl p-4">
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
                 <div class="flex items-center justify-between mb-2">
-                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">FDS 위험점수</p>
-                    <p class="text-sm font-black" id="modal-risk-score-text">—</p>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">FDS 위험점수</p>
+                    <p id="modal-risk-text" class="text-base font-black text-slate-900">—</p>
                 </div>
-                <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
-                    <div id="modal-risk-bar" class="h-full risk-bar rounded-full" style="width:0%"></div>
+                <div class="h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                    <div id="modal-risk-bar" class="h-full risk-bar rounded-full bg-emerald-400" style="width:0%"></div>
                 </div>
-                <div class="flex justify-between text-[9px] text-slate-600 mt-1 font-bold">
-                    <span>0 정상</span>
-                    <span>40 주의</span>
-                    <span>70 위험</span>
-                    <span>100 차단</span>
+                <div class="flex justify-between text-[9px] text-slate-400 mt-1.5 font-bold">
+                    <span>0 정상</span><span>40 주의</span><span>70 위험</span><span>100 차단</span>
                 </div>
             </div>
 
-            <!-- 차단/결과 사유 -->
-            <div class="bg-slate-950/60 rounded-xl p-4">
-                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
-                    <i class="fa-solid fa-circle-exclamation mr-1"></i> 정책 판정 사유
+            <!-- 정책 사유 (Rule ID 포함) -->
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                    <i class="fa-solid fa-circle-exclamation mr-1 text-rose-400"></i>
+                    정책 판정 사유 (Rule ID)
                 </p>
-                <p class="text-sm text-slate-300 leading-relaxed" id="modal-reason">사유 없음</p>
+                <div id="modal-reason-tags" class="flex flex-wrap gap-2 mb-2"></div>
+                <p id="modal-reason-text" class="text-sm text-slate-700 leading-relaxed">—</p>
             </div>
 
-            <!-- requestId 기준 전체 검사 체인 타임라인 -->
+            <!-- requestId 체인 타임라인 -->
             <div>
-                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">
-                    <i class="fa-solid fa-timeline mr-1"></i> 검사 체인 타임라인
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                    <i class="fa-solid fa-timeline mr-1 text-indigo-400"></i> 검사 체인 타임라인
                 </p>
                 <div id="modal-chain" class="space-y-2">
-                    <div class="text-xs text-slate-600">로딩중...</div>
+                    <p class="text-xs text-slate-400">로딩 중...</p>
                 </div>
             </div>
         </div>
 
         <!-- 모달 푸터 -->
-        <div class="px-6 py-4 border-t border-slate-800 flex items-center justify-between">
-            <div id="modal-kms-status" class="flex items-center gap-2 text-xs font-bold">
-                <!-- KMS 허용 여부 -->
-            </div>
-            <div id="modal-operator-notify" class="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
-                <!-- 운영자 알림 여부 -->
-            </div>
+        <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50">
+            <div id="modal-kms"      class="flex items-center gap-1.5 text-xs font-bold text-slate-500"></div>
+            <div id="modal-operator" class="flex items-center gap-1.5 text-[10px] font-bold text-slate-400"></div>
         </div>
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════
+<!-- ═══════════════════════════════════════════════════════
      JavaScript
-════════════════════════════════════════════════════════════ -->
+════════════════════════════════════════════════════════ -->
 <script>
-    let currentPage = 0;
-    let totalPages  = 0;
+// ── 상수 ─────────────────────────────────────────────────
+const POLL_SEC    = 30;
+const PAGE_SIZE   = 20;
 
-    // ── 초기 로드 ──────────────────────────────────────────────
-    document.addEventListener('DOMContentLoaded', loadAll);
+// ── 상태 ─────────────────────────────────────────────────
+let currentPage = 0;
+let totalPages  = 0;
+let pollRemain  = POLL_SEC;
+let pollTimer   = null;
+let countdownTimer = null;
 
-    async function loadAll() {
-        await Promise.all([loadSummary(), loadLogs(0)]);
-    }
+// ── 초기화 ───────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    loadAll();
+    startPolling();
+});
 
-    // ── 요약 카드 로드 ─────────────────────────────────────────
-    async function loadSummary() {
-        try {
-            const res  = await fetch('/api/admin/security/summary');
-            const data = await res.json();
-            document.getElementById('stat-blocked').textContent    = data.todayBlocked    ?? '0';
-            document.getElementById('stat-pending').textContent    = data.pendingCount    ?? '0';
-            document.getElementById('stat-addresses').textContent  = data.blockedAddresses ?? '0';
-            document.getElementById('stat-highrisk').textContent   = data.highRiskCount7d ?? '0';
-            document.getElementById('stat-avgrisk').textContent    = data.avgRiskScore    ?? '0.0';
-        } catch (e) {
-            console.error('요약 로드 실패', e);
+// ═══════════════════════════════════════════════════════
+// 폴링 / 새로고침
+// ═══════════════════════════════════════════════════════
+
+function startPolling() {
+    clearInterval(pollTimer);
+    clearInterval(countdownTimer);
+
+    pollRemain = POLL_SEC;
+    updateCountdownUI();
+
+    countdownTimer = setInterval(() => {
+        pollRemain--;
+        updateCountdownUI();
+        if (pollRemain <= 0) {
+            pollRemain = POLL_SEC;
+            loadAll();
         }
-    }
+    }, 1000);
+}
 
-    // ── 로그 테이블 로드 ────────────────────────────────────────
-    async function loadLogs(page) {
-        const tbody = document.getElementById('log-tbody');
-        tbody.innerHTML = `<div class="px-6 py-16 text-center text-slate-600 text-sm">
-            <i class="fa-solid fa-circle-notch fa-spin mr-2"></i> 로딩중...</div>`;
+function updateCountdownUI() {
+    document.getElementById('poll-label').textContent = pollRemain + 's';
+    // SVG 링: dashoffset 0(꽉 참) → 88(비어 있음)
+    const offset = 88 * (1 - pollRemain / POLL_SEC);
+    const ring = document.getElementById('poll-ring');
+    if (ring) ring.style.strokeDashoffset = offset;
+}
 
-        try {
-            const res  = await fetch(`/api/admin/security/logs?page=${page}&size=20`);
-            const data = await res.json();
+function manualRefresh() {
+    const icon = document.getElementById('refresh-icon');
+    icon.classList.add('fa-spin');
+    loadAll().finally(() => {
+        icon.classList.remove('fa-spin');
+        // 폴링 카운트다운 리셋
+        pollRemain = POLL_SEC;
+    });
+}
 
-            currentPage = data.currentPage;
-            totalPages  = data.totalPages;
+// ═══════════════════════════════════════════════════════
+// 데이터 로드
+// ═══════════════════════════════════════════════════════
 
-            document.getElementById('total-count').textContent = `총 ${data.totalElements}건`;
-            document.getElementById('page-info').textContent   = `${currentPage + 1} / ${totalPages || 1}`;
-            document.getElementById('prev-btn').disabled = currentPage === 0;
-            document.getElementById('next-btn').disabled = currentPage >= totalPages - 1;
+async function loadAll() {
+    await Promise.all([loadSummary(), loadLogs(currentPage)]);
+}
 
-            if (!data.logs || data.logs.length === 0) {
-                tbody.innerHTML = `<div class="px-6 py-16 text-center text-slate-600 text-sm">
-                    <i class="fa-solid fa-shield-check text-2xl mb-3 block text-slate-700"></i>
-                    아직 보안 이벤트가 없습니다</div>`;
-                return;
-            }
+// ── 요약 카드 ─────────────────────────────────────────
+async function loadSummary() {
+    try {
+        const res  = await fetch('/api/admin/security/summary');
+        if (!res.ok) return;
+        const d = await res.json();
+        setText('stat-blocked',   d.todayBlocked    ?? '0');
+        setText('stat-pending',   d.pendingCount    ?? '0');
+        setText('stat-addresses', d.blockedAddresses ?? '0');
+        setText('stat-highrisk',  d.highRiskCount7d  ?? '0');
+        setText('stat-avgrisk',   d.avgRiskScore     ?? '0.0');
+    } catch (e) { console.warn('[Summary]', e); }
+}
 
-            tbody.innerHTML = data.logs.map(log => renderRow(log)).join('');
-        } catch (e) {
-            tbody.innerHTML = `<div class="px-6 py-8 text-center text-rose-400 text-sm">로드 실패: ${e.message}</div>`;
-        }
-    }
+// ── 로그 테이블 ───────────────────────────────────────
+async function loadLogs(page) {
+    const tbody = document.getElementById('log-tbody');
+    tbody.innerHTML = `<div class="px-6 py-12 text-center text-slate-400 text-sm">
+        <i class="fa-solid fa-circle-notch fa-spin text-indigo-400 mr-2"></i>로딩 중...</div>`;
+    try {
+        const res  = await fetch(`/api/admin/security/logs?page=${page}&size=${PAGE_SIZE}`);
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
 
-    // ── 로그 행 렌더링 ──────────────────────────────────────────
-    function renderRow(log) {
-        const resultBadge  = resultBadgeHtml(log.checkResult);
-        const typeBadge    = typeBadgeHtml(log.checkType);
-        const riskBar      = riskBarHtml(log.riskScore);
-        const time         = formatTime(log.createdAt);
+        currentPage = data.currentPage ?? 0;
+        totalPages  = data.totalPages  ?? 0;
 
-        return `
-        <div class="log-row grid grid-cols-12 gap-0 px-6 py-4 items-center"
-             onclick="openModal(${log.id}, '${log.requestId}')">
+        setText('total-count', `총 ${data.totalElements ?? 0}건`);
+        setText('page-info',   `${currentPage + 1} / ${Math.max(totalPages, 1)}`);
+        document.getElementById('prev-btn').disabled = !data.hasPrev;
+        document.getElementById('next-btn').disabled = !data.hasNext;
 
-            <!-- 타임스탬프 -->
-            <div class="col-span-2">
-                <p class="text-xs font-bold text-slate-300">${time.date}</p>
-                <p class="text-[10px] text-slate-600 font-mono">${time.time}</p>
-            </div>
-
-            <!-- 요청 주체 -->
-            <div class="col-span-3">
-                <p class="text-xs font-semibold text-slate-200 truncate">${log.callerEmail ?? '—'}</p>
-                <p class="text-[10px] text-slate-600 font-mono">${log.ipAddress ?? '—'}</p>
-            </div>
-
-            <!-- 검사 유형 -->
-            <div class="col-span-2">${typeBadge}</div>
-
-            <!-- FDS 위험점수 -->
-            <div class="col-span-2">
-                ${log.riskScore > 0 ? riskBar : '<span class="text-[10px] text-slate-700 font-bold">N/A</span>'}
-            </div>
-
-            <!-- 정책 결과 -->
-            <div class="col-span-2">${resultBadge}</div>
-
-            <!-- 상세 버튼 -->
-            <div class="col-span-1 text-right">
-                <span class="text-[10px] text-indigo-500 font-bold hover:text-indigo-300">
-                    <i class="fa-solid fa-chevron-right"></i>
-                </span>
-            </div>
-        </div>`;
-    }
-
-    // ── 모달 열기 ──────────────────────────────────────────────
-    async function openModal(id, requestId) {
-        const modal = document.getElementById('detailModal');
-        const card  = document.getElementById('modalCard');
-
-        // 모달 표시
-        modal.classList.remove('hidden');
-        setTimeout(() => {
-            modal.style.opacity = '1';
-            card.classList.remove('hidden-state');
-        }, 10);
-
-        // 단건 상세 로드
-        try {
-            const res = await fetch(`/api/admin/security/logs/${id}`);
-            const log = await res.json();
-            fillModal(log);
-        } catch (e) {
-            console.error('상세 로드 실패', e);
-        }
-
-        // 체인 타임라인 로드
-        try {
-            const res   = await fetch(`/api/admin/security/chain/${requestId}`);
-            const chain = await res.json();
-            renderChain(chain);
-        } catch (e) {
-            document.getElementById('modal-chain').innerHTML =
-                '<div class="text-xs text-slate-600">체인 로드 실패</div>';
-        }
-    }
-
-    function fillModal(log) {
-        const time = formatTime(log.createdAt);
-
-        // 헤더 아이콘
-        const iconDiv = document.getElementById('modal-icon');
-        iconDiv.className = `w-9 h-9 rounded-xl flex items-center justify-center ${resultIconBg(log.checkResult)}`;
-        iconDiv.innerHTML = `<i class="${resultIcon(log.checkResult)} text-sm"></i>`;
-
-        document.getElementById('modal-title').textContent =
-            `${checkTypeLabel(log.checkType)} — ${checkResultLabel(log.checkResult)}`;
-        document.getElementById('modal-request-id').textContent = `REQ: ${log.requestId ?? '—'}`;
-        document.getElementById('modal-caller').textContent     = log.callerEmail ?? '—';
-        document.getElementById('modal-ip').textContent         = log.ipAddress   ?? '—';
-        document.getElementById('modal-to').textContent         = log.toAddress   ?? '—';
-        document.getElementById('modal-amount').textContent     =
-            log.amount ? `${log.amount} ${log.tokenSymbol}` : '—';
-        document.getElementById('modal-check-type').textContent = checkTypeLabel(log.checkType);
-        document.getElementById('modal-time').textContent       = `${time.date} ${time.time}`;
-        document.getElementById('modal-reason').textContent     = log.blockReason ?? '정상 처리 (차단 사유 없음)';
-
-        // 위험점수 게이지
-        const score = log.riskScore > 0 ? log.riskScore : 0;
-        const bar   = document.getElementById('modal-risk-bar');
-        bar.style.width = score + '%';
-        bar.className   = `h-full risk-bar rounded-full ${riskColor(score)}`;
-        document.getElementById('modal-risk-score-text').textContent  = score > 0 ? `${score}점` : 'N/A';
-        document.getElementById('modal-risk-score-text').className    = `text-sm font-black ${riskTextColor(score)}`;
-
-        // KMS 허용 여부
-        document.getElementById('modal-kms-status').innerHTML = log.kmsCallAllowed
-            ? `<i class="fa-solid fa-key text-emerald-400"></i><span class="text-emerald-400">KMS 서명 허용됨</span>`
-            : `<i class="fa-solid fa-key text-rose-400"></i><span class="text-rose-400">KMS 서명 차단됨</span>`;
-
-        // 운영자 알림
-        document.getElementById('modal-operator-notify').innerHTML = log.operatorNotified
-            ? `<i class="fa-solid fa-bell text-amber-400"></i><span class="text-amber-400">운영자 알림 발송됨</span>`
-            : `<i class="fa-solid fa-bell-slash text-slate-700"></i><span>알림 없음</span>`;
-    }
-
-    // ── 체인 타임라인 렌더링 ─────────────────────────────────────
-    function renderChain(chain) {
-        const container = document.getElementById('modal-chain');
-        if (!chain || chain.length === 0) {
-            container.innerHTML = '<div class="text-xs text-slate-600">체인 데이터 없음</div>';
+        const logs = data.logs ?? [];
+        if (logs.length === 0) {
+            tbody.innerHTML = `<div class="px-6 py-16 text-center text-slate-400 text-sm">
+                <i class="fa-solid fa-shield-check text-3xl text-slate-200 block mb-3"></i>
+                아직 보안 이벤트가 없습니다</div>`;
             return;
         }
+        tbody.innerHTML = logs.map(renderRow).join('');
+    } catch (e) {
+        tbody.innerHTML = `<div class="px-6 py-8 text-center text-rose-400 text-sm">
+            <i class="fa-solid fa-circle-xmark mr-1"></i>로드 실패: ${e.message}</div>`;
+    }
+}
 
-        container.innerHTML = chain.map((item, i) => `
-            <div class="flex items-start gap-3">
-                <div class="flex flex-col items-center">
-                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black flex-shrink-0
-                        ${item.checkResult === 'PASS' ? 'bg-emerald-500/20 text-emerald-400' :
-                          item.checkResult === 'FAIL' ? 'bg-rose-500/20 text-rose-400' :
-                          'bg-amber-500/20 text-amber-400'}">
-                        ${i + 1}
-                    </div>
-                    ${i < chain.length - 1 ? '<div class="w-px h-4 bg-slate-800 mt-1"></div>' : ''}
-                </div>
-                <div class="pb-2 flex-1">
-                    <div class="flex items-center gap-2">
-                        <span class="text-[10px] font-black text-slate-300">${checkTypeLabel(item.checkType)}</span>
-                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded
-                            ${item.checkResult === 'PASS' ? 'bg-emerald-500/10 text-emerald-400' :
-                              item.checkResult === 'FAIL' ? 'bg-rose-500/10 text-rose-400' :
-                              'bg-amber-500/10 text-amber-400'}">
-                            ${checkResultLabel(item.checkResult)}
-                        </span>
-                        ${item.riskScore > 0 ? `<span class="text-[9px] text-slate-600">${item.riskScore}점</span>` : ''}
-                    </div>
-                    ${item.blockReason ? `<p class="text-[10px] text-slate-600 mt-0.5">${item.blockReason}</p>` : ''}
-                </div>
+// ═══════════════════════════════════════════════════════
+// 테이블 행 렌더링
+// ═══════════════════════════════════════════════════════
+
+function renderRow(log) {
+    // ① 위험점수 80점 이상 → 빨간 배경 강조
+    const isHighRisk  = log.riskScore >= 80;
+    const rowClass    = isHighRisk
+        ? 'log-row row-high-risk grid grid-cols-12 gap-0 px-6 py-4 items-center'
+        : 'log-row grid grid-cols-12 gap-0 px-6 py-4 items-center';
+
+    const time = formatTime(log.createdAt);
+
+    // ② Rule ID 추출 ([F01], [F02] 등) from blockReason
+    const ruleTag = extractRuleTag(log.blockReason);
+
+    // ③ 위험점수 미니 게이지
+    const riskHtml = log.riskScore > 0
+        ? `<div class="flex items-center gap-1.5">
+               <div class="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                 <div class="h-full rounded-full ${riskBg(log.riskScore)} risk-bar"
+                      style="width:${Math.min(log.riskScore,100)}%"></div>
+               </div>
+               <span class="text-[11px] font-black ${riskText(log.riskScore)}">${log.riskScore}</span>
+           </div>`
+        : `<span class="text-[10px] text-slate-300 font-medium">N/A</span>`;
+
+    return `
+    <div class="${rowClass}" onclick="openModal(${log.id},'${log.requestId}')">
+        <!-- 타임스탬프 -->
+        <div class="col-span-2">
+            <p class="text-xs font-semibold text-slate-700">${time.date}</p>
+            <p class="text-[10px] text-slate-400 font-mono">${time.time}</p>
+        </div>
+        <!-- 요청자 -->
+        <div class="col-span-2 truncate">
+            <p class="text-xs font-semibold text-slate-800 truncate">${log.callerEmail ?? '—'}</p>
+        </div>
+        <!-- IP -->
+        <div class="col-span-1">
+            <p class="text-[10px] text-slate-500 font-mono truncate">${log.ipAddress ?? '—'}</p>
+        </div>
+        <!-- 검사 유형 -->
+        <div class="col-span-2">${typeBadge(log.checkType)}</div>
+        <!-- FDS 위험점수 게이지 -->
+        <div class="col-span-2">${riskHtml}</div>
+        <!-- 정책 사유 Rule ID -->
+        <div class="col-span-2">
+            ${ruleTag
+                ? `<span class="text-[10px] font-black text-rose-500 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded font-mono">${ruleTag}</span>`
+                : `<span class="text-[10px] text-slate-300">—</span>`}
+            ${log.blockReason
+                ? `<p class="text-[9px] text-slate-400 mt-0.5 truncate max-w-[140px]">${log.blockReason}</p>`
+                : ''}
+        </div>
+        <!-- 결과 -->
+        <div class="col-span-1 text-right">${resultBadge(log.checkResult)}</div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// 모달 열기 / 닫기
+// ═══════════════════════════════════════════════════════
+
+async function openModal(id, requestId) {
+    const modal = document.getElementById('detailModal');
+    const card  = document.getElementById('modalCard');
+    modal.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        modal.style.opacity = '1';
+        card.classList.remove('modal-hidden');
+    });
+
+    // 단건 상세
+    try {
+        const res = await fetch(`/api/admin/security/logs/${id}`);
+        if (res.ok) fillModal(await res.json());
+    } catch (e) { console.warn('[Modal]', e); }
+
+    // 체인 타임라인
+    try {
+        const res   = await fetch(`/api/admin/security/chain/${requestId}`);
+        if (res.ok) renderChain(await res.json());
+    } catch (e) {
+        document.getElementById('modal-chain').innerHTML =
+            '<p class="text-xs text-slate-400">체인 로드 실패</p>';
+    }
+}
+
+function fillModal(log) {
+    const time = formatTime(log.createdAt);
+
+    // 헤더 아이콘
+    const iconDiv = document.getElementById('modal-icon');
+    iconDiv.className = `w-9 h-9 rounded-xl flex items-center justify-center ${resultIconBg(log.checkResult)}`;
+    iconDiv.innerHTML = `<i class="${resultIconClass(log.checkResult)} text-sm"></i>`;
+
+    setText('modal-title',      `${checkTypeLabel(log.checkType)} — ${resultLabel(log.checkResult)}`);
+    setText('modal-request-id', `REQ: ${log.requestId ?? '—'}`);
+    setText('modal-caller',     log.callerEmail ?? '—');
+    setText('modal-ip',         log.ipAddress   ?? '—');
+    setText('modal-to',         log.toAddress   ?? '—');
+    setText('modal-amount',     log.amount ? `${log.amount} ${log.tokenSymbol}` : '—');
+    setText('modal-check-type', checkTypeLabel(log.checkType));
+    setText('modal-time',       `${time.date} ${time.time}`);
+
+    // 위험점수 게이지
+    const score = log.riskScore > 0 ? log.riskScore : 0;
+    const bar   = document.getElementById('modal-risk-bar');
+    bar.style.width     = score + '%';
+    bar.className       = `h-full risk-bar rounded-full ${riskBg(score)}`;
+    const riskTextEl    = document.getElementById('modal-risk-text');
+    riskTextEl.textContent = score > 0 ? `${score}점` : 'N/A';
+    riskTextEl.className   = `text-base font-black ${riskText(score)}`;
+
+    // Rule ID 태그 + 전체 사유 텍스트
+    const tagsEl   = document.getElementById('modal-reason-tags');
+    const reasonEl = document.getElementById('modal-reason-text');
+    const rules    = extractAllRuleTags(log.blockReason);
+    tagsEl.innerHTML = rules.length > 0
+        ? rules.map(r => `<span class="text-[10px] font-black text-rose-500 bg-rose-50 border border-rose-200 px-2 py-1 rounded font-mono">${r}</span>`).join('')
+        : '';
+    reasonEl.textContent = log.blockReason ?? '정상 처리 (차단 사유 없음)';
+
+    // KMS + 운영자 알림
+    document.getElementById('modal-kms').innerHTML = log.kmsCallAllowed
+        ? `<i class="fa-solid fa-key text-emerald-500"></i><span class="text-emerald-600">KMS 서명 허용됨</span>`
+        : `<i class="fa-solid fa-key text-rose-400"></i><span class="text-rose-500">KMS 서명 차단됨</span>`;
+    document.getElementById('modal-operator').innerHTML = log.operatorNotified
+        ? `<i class="fa-solid fa-bell text-amber-500"></i><span class="text-amber-600">운영자 알림 발송됨</span>`
+        : `<i class="fa-solid fa-bell-slash text-slate-300"></i><span>알림 없음</span>`;
+}
+
+function renderChain(chain) {
+    const el = document.getElementById('modal-chain');
+    if (!chain?.length) { el.innerHTML = '<p class="text-xs text-slate-400">체인 없음</p>'; return; }
+    el.innerHTML = chain.map((item, i) => `
+        <div class="flex items-start gap-3">
+            <div class="flex flex-col items-center flex-shrink-0">
+                <div class="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black
+                    ${item.checkResult === 'PASS' ? 'bg-emerald-100 text-emerald-600' :
+                      item.checkResult === 'FAIL' ? 'bg-rose-100 text-rose-500' :
+                                                    'bg-amber-100 text-amber-600'}">${i + 1}</div>
+                ${i < chain.length - 1 ? '<div class="w-px h-4 bg-slate-200 mt-1"></div>' : ''}
             </div>
-        `).join('');
-    }
-
-    // ── 모달 닫기 ──────────────────────────────────────────────
-    function closeModal(e) {
-        if (e.target === document.getElementById('detailModal')) closeModalDirect();
-    }
-    function closeModalDirect() {
-        const modal = document.getElementById('detailModal');
-        const card  = document.getElementById('modalCard');
-        card.classList.add('hidden-state');
-        modal.style.opacity = '0';
-        setTimeout(() => modal.classList.add('hidden'), 200);
-    }
-
-    // ── 페이지네이션 ────────────────────────────────────────────
-    function changePage(delta) {
-        const next = currentPage + delta;
-        if (next < 0 || next >= totalPages) return;
-        loadLogs(next);
-    }
-
-    // ── 헬퍼: 시간 포맷 ─────────────────────────────────────────
-    function formatTime(ts) {
-        if (!ts) return { date: '—', time: '—' };
-        const d = new Date(ts);
-        return {
-            date: d.toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' }),
-            time: d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-        };
-    }
-
-    // ── 헬퍼: 배지/색상 ─────────────────────────────────────────
-    function resultBadgeHtml(result) {
-        const map = {
-            FAIL:    `<span class="flex items-center gap-1 text-[10px] font-black text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-full w-fit"><i class="fa-solid fa-xmark"></i> 차단</span>`,
-            PENDING: `<span class="flex items-center gap-1 text-[10px] font-black text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full w-fit"><i class="fa-solid fa-clock"></i> 대기</span>`,
-            PASS:    `<span class="flex items-center gap-1 text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full w-fit"><i class="fa-solid fa-check"></i> 통과</span>`,
-        };
-        return map[result] ?? `<span class="text-[10px] text-slate-600">${result}</span>`;
-    }
-
-    function typeBadgeHtml(type) {
-        const map = {
-            RATE_LIMIT:      `<span class="text-[10px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">빈도제한</span>`,
-            HIGH_AMOUNT:     `<span class="text-[10px] font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded">고액출금</span>`,
-            FDS:             `<span class="text-[10px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded">FDS</span>`,
-            BLACKLIST:       `<span class="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded">블랙리스트</span>`,
-            KMS_GATE:        `<span class="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">KMS 게이트</span>`,
-            OPERATOR_NOTIFY: `<span class="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">운영자 알림</span>`,
-        };
-        return map[type] ?? `<span class="text-[10px] text-slate-600">${type}</span>`;
-    }
-
-    function riskBarHtml(score) {
-        if (!score || score <= 0) return '';
-        return `
-            <div class="flex items-center gap-2">
-                <div class="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                    <div class="h-full rounded-full ${riskColor(score)}" style="width:${score}%"></div>
+            <div class="pb-2 flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-[11px] font-black text-slate-700">${checkTypeLabel(item.checkType)}</span>
+                    ${resultBadge(item.checkResult)}
+                    ${item.riskScore > 0 ? `<span class="text-[10px] font-bold ${riskText(item.riskScore)}">${item.riskScore}점</span>` : ''}
                 </div>
-                <span class="text-[10px] font-black ${riskTextColor(score)}">${score}</span>
-            </div>`;
-    }
+                ${item.blockReason
+                    ? `<p class="text-[10px] text-slate-500 mt-0.5 truncate">${item.blockReason}</p>`
+                    : ''}
+            </div>
+        </div>`).join('');
+}
 
-    function riskColor(score) {
-        if (score >= 70) return 'bg-rose-500';
-        if (score >= 40) return 'bg-amber-400';
-        return 'bg-emerald-400';
-    }
-    function riskTextColor(score) {
-        if (score >= 70) return 'text-rose-400';
-        if (score >= 40) return 'text-amber-400';
-        return 'text-emerald-400';
-    }
+function closeModal(e) {
+    if (e.target === document.getElementById('detailModal')) closeModalDirect();
+}
+function closeModalDirect() {
+    const modal = document.getElementById('detailModal');
+    const card  = document.getElementById('modalCard');
+    card.classList.add('modal-hidden');
+    modal.style.opacity = '0';
+    setTimeout(() => modal.classList.add('hidden'), 200);
+}
 
-    function checkTypeLabel(type) {
-        const map = {
-            RATE_LIMIT: '빈도 제한', HIGH_AMOUNT: '고액 출금', FDS: 'FDS 이상거래',
-            BLACKLIST: '블랙리스트', KMS_GATE: 'KMS 최종 게이트', OPERATOR_NOTIFY: '운영자 알림'
-        };
-        return map[type] ?? type;
-    }
-    function checkResultLabel(r) {
-        return { PASS:'통과', FAIL:'차단', PENDING:'승인대기' }[r] ?? r;
-    }
-    function resultIcon(r) {
-        return { PASS:'fa-solid fa-shield-check text-emerald-400',
-                 FAIL:'fa-solid fa-shield-xmark text-rose-400',
-                 PENDING:'fa-solid fa-shield-halved text-amber-400' }[r] ?? 'fa-solid fa-shield';
-    }
-    function resultIconBg(r) {
-        return { PASS:'bg-emerald-500/10', FAIL:'bg-rose-500/10', PENDING:'bg-amber-500/10' }[r] ?? 'bg-slate-800';
-    }
+// ═══════════════════════════════════════════════════════
+// 페이지네이션
+// ═══════════════════════════════════════════════════════
+
+function changePage(delta) {
+    const next = currentPage + delta;
+    if (next < 0 || next >= totalPages) return;
+    loadLogs(next);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ═══════════════════════════════════════════════════════
+// 헬퍼
+// ═══════════════════════════════════════════════════════
+
+function setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+}
+
+function formatTime(ts) {
+    if (!ts) return { date:'—', time:'—' };
+    const d = new Date(ts);
+    return {
+        date: d.toLocaleDateString('ko-KR', { month:'2-digit', day:'2-digit' }),
+        time: d.toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', second:'2-digit' })
+    };
+}
+
+/** blockReason에서 첫 번째 Rule 태그 추출 (예: [F01]) */
+function extractRuleTag(reason) {
+    if (!reason) return null;
+    const m = reason.match(/\[([A-Z0-9\-]+)\]/);
+    return m ? `[${m[1]}]` : null;
+}
+
+/** blockReason에서 모든 Rule 태그 추출 */
+function extractAllRuleTags(reason) {
+    if (!reason) return [];
+    const matches = [...reason.matchAll(/\[([A-Z0-9\-]+)\]/g)];
+    return matches.map(m => `[${m[1]}]`);
+}
+
+function riskBg(s) {
+    if (s >= 80) return 'bg-rose-500';
+    if (s >= 70) return 'bg-red-400';
+    if (s >= 40) return 'bg-amber-400';
+    return 'bg-emerald-400';
+}
+function riskText(s) {
+    if (s >= 70) return 'text-rose-500';
+    if (s >= 40) return 'text-amber-500';
+    return 'text-emerald-500';
+}
+
+function resultBadge(r) {
+    const m = {
+        FAIL:    `<span class="inline-flex items-center gap-1 text-[10px] font-black text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200"><i class="fa-solid fa-xmark"></i>차단</span>`,
+        PENDING: `<span class="inline-flex items-center gap-1 text-[10px] font-black text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200"><i class="fa-solid fa-clock"></i>대기</span>`,
+        PASS:    `<span class="inline-flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200"><i class="fa-solid fa-check"></i>통과</span>`,
+    };
+    return m[r] ?? `<span class="text-[10px] text-slate-400">${r}</span>`;
+}
+
+function typeBadge(t) {
+    const m = {
+        RATE_LIMIT:      `<span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">빈도제한</span>`,
+        HIGH_AMOUNT:     `<span class="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">고액출금</span>`,
+        FDS:             `<span class="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">FDS</span>`,
+        BLACKLIST:       `<span class="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">블랙리스트</span>`,
+        KMS_GATE:        `<span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">KMS게이트</span>`,
+        OPERATOR_NOTIFY: `<span class="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">운영자알림</span>`,
+    };
+    return m[t] ?? `<span class="text-[10px] text-slate-400">${t}</span>`;
+}
+
+function checkTypeLabel(t) {
+    return {
+        RATE_LIMIT:'빈도 제한', HIGH_AMOUNT:'고액 출금', FDS:'FDS 이상거래',
+        BLACKLIST:'블랙리스트', KMS_GATE:'KMS 최종 게이트', OPERATOR_NOTIFY:'운영자 알림'
+    }[t] ?? t;
+}
+function resultLabel(r) {
+    return { PASS:'통과', FAIL:'차단', PENDING:'승인대기' }[r] ?? r;
+}
+function resultIconBg(r) {
+    return { PASS:'bg-emerald-50', FAIL:'bg-rose-50', PENDING:'bg-amber-50' }[r] ?? 'bg-slate-100';
+}
+function resultIconClass(r) {
+    return {
+        PASS:    'fa-solid fa-shield-check text-emerald-500',
+        FAIL:    'fa-solid fa-shield-xmark text-rose-500',
+        PENDING: 'fa-solid fa-shield-halved text-amber-500'
+    }[r] ?? 'fa-solid fa-shield text-slate-400';
+}
 </script>
 </body>
 </html>
