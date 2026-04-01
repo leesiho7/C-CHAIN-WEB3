@@ -10,6 +10,7 @@ import com.tem.cchain.wallet.kms.KmsTransactionSigner;
 import com.tem.cchain.wallet.policy.PolicyEngine;
 import com.tem.cchain.wallet.policy.dto.PolicyDecision;
 import com.tem.cchain.wallet.policy.dto.PolicyRequest;
+import com.tem.cchain.wallet.security.WithdrawalSecurityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -65,6 +66,13 @@ public class EnterpriseWalletService {
     private final PolicyEngine policyEngine;
     private final IamRoleService iamRoleService;
     private final AuditLogService auditLogService;
+
+    /**
+     * KMS 호출 직전 보안 게이트.
+     * 빈도 제한 → 고액 출금 → 실시간 FDS 순서로 검사하며,
+     * 모든 검사 결과는 security_audit_log 테이블에 저장됩니다.
+     */
+    private final WithdrawalSecurityService withdrawalSecurityService;
 
     @Value("${token.contract.address:none}")
     private String omtContractAddress;
@@ -233,6 +241,19 @@ public class EnterpriseWalletService {
             omtContractAddress,
             BigInteger.ZERO,   // ETH value = 0 (토큰 전송이므로)
             calldata
+        );
+
+        // ── 보안 게이트 (KMS 호출 직전 필수 통과) ────────────
+        // WithdrawalSecurityService 가 빈도 제한 → 고액 출금 → FDS 순서로
+        // 모든 검사를 수행하고 결과를 security_audit_log 에 저장합니다.
+        // 검사 실패 시 예외가 throw되어 아래 KMS 서명 코드에 도달하지 않습니다.
+        String callerEmail = getCurrentEmail();
+        withdrawalSecurityService.enforceSecurityGate(
+                callerEmail,
+                toAddress,
+                amount,
+                "OMT",
+                "internal" // IP: 내부 서버 호출은 "internal" 고정
         );
 
         // KMS 서명 (private key 없이!)
