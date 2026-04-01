@@ -43,7 +43,7 @@ public class SyncService {
     private String omtContractAddress;
 
     private static final String SERVICE_NAME  = "OMT_MULTI_INDEXER";
-    private static final int BATCH_BLOCK_SIZE = 2000;
+    private static final int BATCH_BLOCK_SIZE = 500;
     private static final String TRANSFER_TOPIC =
             "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 
