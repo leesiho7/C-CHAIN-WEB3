@@ -4,8 +4,9 @@ import com.tem.cchain.wallet.security.SecurityAuditLog;
 import com.tem.cchain.wallet.security.SecurityAuditLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RAtomicLong;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -50,7 +51,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RealTimeFdsService {
 
-    private final StringRedisTemplate redisTemplate;
+    private final RedissonClient redissonClient;
     private final SecurityAuditLogRepository auditLogRepository;
 
     // ── 설정값 ───────────────────────────────────────────────
@@ -163,15 +164,16 @@ public class RealTimeFdsService {
     private int checkVelocity(String callerEmail) {
         String key = VELOCITY_KEY_PREFIX + callerEmail;
         try {
-            // 현재 카운트 조회
-            String countStr = redisTemplate.opsForValue().get(key);
-            int count = (countStr == null) ? 0 : Integer.parseInt(countStr);
+            // Redisson RAtomicLong으로 슬라이딩 윈도우 카운터 구현
+            RAtomicLong counter = redissonClient.getAtomicLong(key);
+            long count = counter.get();
 
-            // 카운트 증가 + TTL 설정 (최초 요청 시)
-            redisTemplate.opsForValue().increment(key);
+            // 카운트 증가
+            counter.incrementAndGet();
+
+            // 최초 요청 시 TTL 설정 (슬라이딩 윈도우)
             if (count == 0) {
-                redisTemplate.expire(key,
-                    java.time.Duration.ofMinutes(velocityWindowMinutes));
+                counter.expire(java.time.Duration.ofMinutes(velocityWindowMinutes));
             }
 
             if (count >= velocityMaxCount) {

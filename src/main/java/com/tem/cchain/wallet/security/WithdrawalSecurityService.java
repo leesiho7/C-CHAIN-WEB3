@@ -7,9 +7,10 @@ import com.tem.cchain.wallet.security.fds.RealTimeFdsService.FdsResult;
 import com.tem.cchain.wallet.security.fds.RealTimeFdsService.FdsVerdict;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RAtomicLong;
+import org.redisson.api.RedissonClient;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,7 +62,7 @@ public class WithdrawalSecurityService {
 
     private final SecurityAuditLogRepository auditLogRepository;
     private final RealTimeFdsService fdsService;
-    private final StringRedisTemplate redisTemplate;
+    private final RedissonClient redissonClient;
 
     // ── 설정값 ───────────────────────────────────────────────
 
@@ -144,14 +145,15 @@ public class WithdrawalSecurityService {
         int currentCount = 0;
 
         try {
-            String countStr = redisTemplate.opsForValue().get(key);
-            currentCount = (countStr == null) ? 0 : Integer.parseInt(countStr);
+            // Redisson RAtomicLong으로 분당 카운터 구현
+            RAtomicLong counter = redissonClient.getAtomicLong(key);
+            currentCount = (int) counter.get();
 
             // 카운트 증가
-            redisTemplate.opsForValue().increment(key);
+            counter.incrementAndGet();
             if (currentCount == 0) {
                 // 최초 요청: 1분 TTL 설정
-                redisTemplate.expire(key, Duration.ofMinutes(1));
+                counter.expire(Duration.ofMinutes(1));
             }
         } catch (Exception e) {
             // Redis 장애 시: 보수적으로 허용 (서비스 중단 방지)
