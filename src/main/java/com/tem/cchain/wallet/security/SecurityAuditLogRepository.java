@@ -8,88 +8,121 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * ════════════════════════════════════════════════════════════
- * [보안 감사 로그 레포지토리] SecurityAuditLogRepository
- * ════════════════════════════════════════════════════════════
- *
  * security_audit_log 테이블 접근 인터페이스.
- *
- * ── 설계 원칙 ───────────────────────────────────────────────
- * - INSERT 전용. UPDATE/DELETE 쿼리 절대 작성 금지.
- * - 빈도 제한 카운트 조회는 Redis에서 처리.
- *   이 레포지토리는 감사/분석 목적의 조회만 담당.
- * ════════════════════════════════════════════════════════════
+ * INSERT/SELECT 전용 — UPDATE/DELETE 쿼리 작성 금지.
  */
 public interface SecurityAuditLogRepository extends JpaRepository<SecurityAuditLog, Long> {
 
-    /**
-     * 특정 요청 ID에 해당하는 모든 검사 로그 조회.
-     * 하나의 출금 요청에 대한 전체 검사 흐름을 재현할 때 사용.
-     *
-     * @param requestId 출금 요청 상관 ID (UUID)
-     */
+    // ── 파생 쿼리 (Derived Query) ────────────────────────────
+
+    /** 특정 요청 ID의 모든 검사 체인 조회 (팝업 타임라인용) */
     List<SecurityAuditLog> findByRequestIdOrderByCreatedAtAsc(String requestId);
 
+    /** 특정 결과(FAIL/PENDING/PASS)의 전체 건수 */
+    long countByCheckResult(SecurityAuditLog.CheckResult checkResult);
+
+    /** 특정 결과 + 특정 시각 이후 건수 (오늘 차단 건수 등) */
+    long countByCheckResultAndCreatedAtAfter(
+            SecurityAuditLog.CheckResult checkResult,
+            LocalDateTime since
+    );
+
+    // ── JPQL (파라미터 바인딩으로 enum 타입 안전 처리) ──────
+
     /**
-     * 특정 이메일의 최근 N시간 내 차단된 출금 횟수 조회.
-     * FDS 분석 및 이상 패턴 탐지에 활용.
-     *
-     * @param callerEmail 요청자 이메일
-     * @param since       조회 시작 시각
+     * 차단된(FAIL) 고유 출금 대상 주소 수 조회.
+     * 블랙리스트 등재 주소 수 카드에 사용.
      */
     @Query("""
-        SELECT COUNT(s) FROM SecurityAuditLog s
-        WHERE s.callerEmail = :callerEmail
-          AND s.checkResult = 'FAIL'
+        SELECT COUNT(DISTINCT s.toAddress)
+        FROM SecurityAuditLog s
+        WHERE s.checkResult = :result
+        """)
+    long countDistinctBlockedToAddresses(@Param("result") SecurityAuditLog.CheckResult result);
+
+    /**
+     * FDS 검사의 평균 위험점수 조회 (riskScore > 0 인 건만).
+     *
+     * @param checkType FDS 타입
+     * @param since     조회 시작 시각
+     */
+    @Query("""
+        SELECT AVG(s.riskScore)
+        FROM SecurityAuditLog s
+        WHERE s.checkType = :checkType
+          AND s.riskScore > 0
           AND s.createdAt >= :since
         """)
-    long countFailedAttemptsSince(
-        @Param("callerEmail") String callerEmail,
-        @Param("since") LocalDateTime since
+    Double avgFdsRiskScoreSince(
+            @Param("checkType") SecurityAuditLog.CheckType checkType,
+            @Param("since") LocalDateTime since
     );
 
     /**
-     * 특정 대상 주소로의 최근 출금 시도 이력 조회.
-     * 동일 주소 반복 출금 패턴 탐지에 활용.
-     *
-     * @param toAddress 출금 대상 주소
-     * @param since     조회 시작 시각
+     * 최근 N일 내 FDS 고위험(riskScore >= 70) 탐지 건수.
+     * 요약 카드 및 BlockchainMonitoringService에서 사용.
+     */
+    @Query("""
+        SELECT COUNT(s)
+        FROM SecurityAuditLog s
+        WHERE s.checkType = :checkType
+          AND s.riskScore >= 70
+          AND s.createdAt >= :since
+        """)
+    long countHighRiskDetectionsSince(
+            @Param("checkType") SecurityAuditLog.CheckType checkType,
+            @Param("since") LocalDateTime since
+    );
+
+    /**
+     * 최근 N일 내 FDS 고위험 탐지 건수 (checkType 고정 오버로드).
+     * BlockchainMonitoringService.monitorDepositFlowAnomalies()에서 호출.
+     */
+    default long countHighRiskDetectionsSince(LocalDateTime since) {
+        return countHighRiskDetectionsSince(SecurityAuditLog.CheckType.FDS, since);
+    }
+
+    /**
+     * 특정 대상 주소로의 최근 출금 KMS_GATE 이력 조회.
+     * FDS RULE-F03 (반복 출금) 탐지에 사용.
      */
     @Query("""
         SELECT s FROM SecurityAuditLog s
         WHERE s.toAddress = :toAddress
-          AND s.checkType = 'KMS_GATE'
+          AND s.checkType = :checkType
           AND s.createdAt >= :since
         ORDER BY s.createdAt DESC
         """)
     List<SecurityAuditLog> findRecentTransfersByToAddress(
-        @Param("toAddress") String toAddress,
-        @Param("since") LocalDateTime since
+            @Param("toAddress") String toAddress,
+            @Param("checkType") SecurityAuditLog.CheckType checkType,
+            @Param("since") LocalDateTime since
     );
 
     /**
-     * 미승인 상태(PENDING)인 출금 요청 목록 조회.
-     * 운영자 승인 대기 화면에서 사용.
+     * 특정 이메일의 최근 FAIL 시도 횟수.
+     * FDS RULE-F04 (평판 검사)에 사용.
      */
     @Query("""
-        SELECT s FROM SecurityAuditLog s
-        WHERE s.checkResult = 'PENDING'
-          AND s.checkType = 'KMS_GATE'
-        ORDER BY s.createdAt DESC
-        """)
-    List<SecurityAuditLog> findPendingApprovals();
-
-    /**
-     * 특정 기간 내 FDS 고위험(riskScore >= 70) 탐지 건수 조회.
-     * 운영 대시보드 통계용.
-     *
-     * @param since 조회 시작 시각
-     */
-    @Query("""
-        SELECT COUNT(s) FROM SecurityAuditLog s
-        WHERE s.checkType = 'FDS'
-          AND s.riskScore >= 70
+        SELECT COUNT(s)
+        FROM SecurityAuditLog s
+        WHERE s.callerEmail = :callerEmail
+          AND s.checkResult = :result
           AND s.createdAt >= :since
         """)
-    long countHighRiskDetectionsSince(@Param("since") LocalDateTime since);
+    long countFailedAttemptsSince(
+            @Param("callerEmail") String callerEmail,
+            @Param("result") SecurityAuditLog.CheckResult result,
+            @Param("since") LocalDateTime since
+    );
+
+    /** countFailedAttemptsSince FAIL 고정 오버로드 (RealTimeFdsService 호환) */
+    default long countFailedAttemptsSince(String callerEmail, LocalDateTime since) {
+        return countFailedAttemptsSince(callerEmail, SecurityAuditLog.CheckResult.FAIL, since);
+    }
+
+    /** findRecentTransfersByToAddress KMS_GATE 고정 오버로드 (RealTimeFdsService 호환) */
+    default List<SecurityAuditLog> findRecentTransfersByToAddress(String toAddress, LocalDateTime since) {
+        return findRecentTransfersByToAddress(toAddress, SecurityAuditLog.CheckType.KMS_GATE, since);
+    }
 }
