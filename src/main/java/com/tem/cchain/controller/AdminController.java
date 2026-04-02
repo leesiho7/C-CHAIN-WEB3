@@ -68,8 +68,8 @@ public class AdminController {
             return "redirect:/login";
         }
 
-        // Translation 데이터 및 연관 정보 조회
-        Translation translation = translationRepository.findById(id)
+        // Translation 데이터 및 연관 정보 조회 (user, document Eager 로드)
+        Translation translation = translationRepository.findWithDetailsById(id)
                 .orElseThrow(() -> new IllegalArgumentException("내역을 찾을 수 없습니다."));
         
         Document document = translation.getDocument();

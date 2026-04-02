@@ -29,6 +29,10 @@ public interface TranslationRepository extends JpaRepository<Translation,Long>{
 	@EntityGraph(attributePaths = {"user", "document"})
 	List<Translation> findByVerifiedAtIsNull();
 
+	//4-1. 관리자 상세 검수용 (user, document LAZY 방지)
+	@EntityGraph(attributePaths = {"user", "document"})
+	Optional<Translation> findWithDetailsById(Long id);
+
 	// 5. 특정 문서의 완료된 번역본 가져오기 (가장 최근 검증된 것)
 	Optional<Translation> findFirstByDocumentIdAndVerifiedAtIsNotNullOrderByVerifiedAtDesc(Long documentId);
 	
