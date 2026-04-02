@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <title>C-Chain | 보안 관제 센터</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -378,6 +379,13 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAll();
     startPolling();
 });
+
+// onclick 인라인 핸들러에서 전역 스코프로 명시적 노출
+window.manualRefresh   = manualRefresh;
+window.changePage      = changePage;
+window.openModal       = openModal;
+window.closeModal      = closeModal;
+window.closeModalDirect = closeModalDirect;
 
 // ═══════════════════════════════════════════════════════
 // 폴링 / 새로고침

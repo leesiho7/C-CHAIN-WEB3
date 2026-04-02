@@ -38,6 +38,14 @@ public class SecurityAuditLogSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        try {
+            seedIfEmpty();
+        } catch (Exception e) {
+            log.warn("[SecuritySeeder] 시드 삽입 실패 — 앱 시작은 계속됩니다: {}", e.getMessage());
+        }
+    }
+
+    private void seedIfEmpty() {
         if (repository.count() > 0) {
             log.info("[SecuritySeeder] 기존 감사 로그 존재 — 시드 건너뜀 ({} 건)", repository.count());
             return;
@@ -55,21 +63,21 @@ public class SecurityAuditLogSeeder implements CommandLineRunner {
             LocalDateTime ts = now.minusHours(1 + i * 2);
 
             // RATE_LIMIT PASS
-            seeds.add(log(rid, user, from, to, "OMT",
+            seeds.add(buildLog(rid, user, from, to, "OMT",
                     BigDecimal.valueOf(120 + i * 30),
                     SecurityAuditLog.CheckType.RATE_LIMIT,
                     SecurityAuditLog.CheckResult.PASS,
                     -1, null, false, false, ts));
 
             // FDS PASS
-            seeds.add(log(rid, user, from, to, "OMT",
+            seeds.add(buildLog(rid, user, from, to, "OMT",
                     BigDecimal.valueOf(120 + i * 30),
                     SecurityAuditLog.CheckType.FDS,
                     SecurityAuditLog.CheckResult.PASS,
                     12 + i * 5, null, false, false, ts.plusSeconds(1)));
 
             // KMS_GATE PASS
-            seeds.add(log(rid, user, from, to, "OMT",
+            seeds.add(buildLog(rid, user, from, to, "OMT",
                     BigDecimal.valueOf(120 + i * 30),
                     SecurityAuditLog.CheckType.KMS_GATE,
                     SecurityAuditLog.CheckResult.PASS,
@@ -84,7 +92,7 @@ public class SecurityAuditLogSeeder implements CommandLineRunner {
             String to   = "0xF001" + "0".repeat(36);
             LocalDateTime ts = now.minusMinutes(45);
 
-            seeds.add(log(rid, user, from, to, "OMT",
+            seeds.add(buildLog(rid, user, from, to, "OMT",
                     BigDecimal.valueOf(500),
                     SecurityAuditLog.CheckType.RATE_LIMIT,
                     SecurityAuditLog.CheckResult.FAIL,
@@ -101,13 +109,13 @@ public class SecurityAuditLogSeeder implements CommandLineRunner {
             String to   = "0xC002" + "0".repeat(36);
             LocalDateTime ts = now.minusMinutes(30);
 
-            seeds.add(log(rid, user, from, to, "OMT",
+            seeds.add(buildLog(rid, user, from, to, "OMT",
                     BigDecimal.valueOf(85000),
                     SecurityAuditLog.CheckType.RATE_LIMIT,
                     SecurityAuditLog.CheckResult.PASS,
                     -1, null, false, false, ts));
 
-            seeds.add(log(rid, user, from, to, "OMT",
+            seeds.add(buildLog(rid, user, from, to, "OMT",
                     BigDecimal.valueOf(85000),
                     SecurityAuditLog.CheckType.HIGH_AMOUNT,
                     SecurityAuditLog.CheckResult.PENDING,
@@ -115,7 +123,7 @@ public class SecurityAuditLogSeeder implements CommandLineRunner {
                     "[HIGH] 고액 출금 임계값 초과 — 운영자 승인 대기 (요청 85,000 OMT / 임계 10,000 OMT)",
                     false, true, ts.plusSeconds(1)));
 
-            seeds.add(log(rid, user, from, to, "OMT",
+            seeds.add(buildLog(rid, user, from, to, "OMT",
                     BigDecimal.valueOf(85000),
                     SecurityAuditLog.CheckType.OPERATOR_NOTIFY,
                     SecurityAuditLog.CheckResult.PASS,
@@ -130,13 +138,13 @@ public class SecurityAuditLogSeeder implements CommandLineRunner {
             String to   = "0xBAD1" + "0".repeat(36);
             LocalDateTime ts = now.minusMinutes(20);
 
-            seeds.add(log(rid, user, from, to, "USDT",
+            seeds.add(buildLog(rid, user, from, to, "USDT",
                     BigDecimal.valueOf(3200),
                     SecurityAuditLog.CheckType.RATE_LIMIT,
                     SecurityAuditLog.CheckResult.PASS,
                     -1, null, false, false, ts));
 
-            seeds.add(log(rid, user, from, to, "USDT",
+            seeds.add(buildLog(rid, user, from, to, "USDT",
                     BigDecimal.valueOf(3200),
                     SecurityAuditLog.CheckType.FDS,
                     SecurityAuditLog.CheckResult.FAIL,
@@ -153,7 +161,7 @@ public class SecurityAuditLogSeeder implements CommandLineRunner {
             String to   = "0x000000000000000000000000000000000bad1ead";
             LocalDateTime ts = now.minusMinutes(12);
 
-            seeds.add(log(rid, user, from, to, "OMT",
+            seeds.add(buildLog(rid, user, from, to, "OMT",
                     BigDecimal.valueOf(999),
                     SecurityAuditLog.CheckType.BLACKLIST,
                     SecurityAuditLog.CheckResult.FAIL,
@@ -170,13 +178,13 @@ public class SecurityAuditLogSeeder implements CommandLineRunner {
             String to   = "0xF102" + "0".repeat(36);
             LocalDateTime ts = now.minusMinutes(7);
 
-            seeds.add(log(rid, user, from, to, "ETH",
+            seeds.add(buildLog(rid, user, from, to, "ETH",
                     BigDecimal.valueOf(2.5),
                     SecurityAuditLog.CheckType.RATE_LIMIT,
                     SecurityAuditLog.CheckResult.PASS,
                     -1, null, false, false, ts));
 
-            seeds.add(log(rid, user, from, to, "ETH",
+            seeds.add(buildLog(rid, user, from, to, "ETH",
                     BigDecimal.valueOf(2.5),
                     SecurityAuditLog.CheckType.FDS,
                     SecurityAuditLog.CheckResult.PENDING,
@@ -193,19 +201,19 @@ public class SecurityAuditLogSeeder implements CommandLineRunner {
             String to   = "0xCAFE" + "B".repeat(36);
             LocalDateTime ts = now.minusMinutes(3);
 
-            seeds.add(log(rid, user, from, to, "OMT",
+            seeds.add(buildLog(rid, user, from, to, "OMT",
                     BigDecimal.valueOf(47500),
                     SecurityAuditLog.CheckType.RATE_LIMIT,
                     SecurityAuditLog.CheckResult.PASS,
                     -1, null, false, false, ts));
 
-            seeds.add(log(rid, user, from, to, "OMT",
+            seeds.add(buildLog(rid, user, from, to, "OMT",
                     BigDecimal.valueOf(47500),
                     SecurityAuditLog.CheckType.HIGH_AMOUNT,
                     SecurityAuditLog.CheckResult.PASS,
                     -1, null, false, true, ts.plusSeconds(1)));
 
-            seeds.add(log(rid, user, from, to, "OMT",
+            seeds.add(buildLog(rid, user, from, to, "OMT",
                     BigDecimal.valueOf(47500),
                     SecurityAuditLog.CheckType.FDS,
                     SecurityAuditLog.CheckResult.FAIL,
@@ -220,7 +228,7 @@ public class SecurityAuditLogSeeder implements CommandLineRunner {
 
     // ── 빌더 헬퍼 ───────────────────────────────────────────────
     // createdAt 은 @CreationTimestamp 가 INSERT 시점에 자동 주입하므로 파라미터 불필요
-    private SecurityAuditLog log(
+    private SecurityAuditLog buildLog(
             String requestId, String callerEmail,
             String fromAddress, String toAddress,
             String tokenSymbol, BigDecimal amount,
