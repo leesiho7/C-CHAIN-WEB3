@@ -76,15 +76,22 @@ public class ContributionService {
 
         // 5. KMS 지갑 → MetaMask 주소로 OMT 보상 전송
         // SecurityContextUtil: 서버 내부 호출에 REWARD 역할을 임시 부여
-        sendRewardSafely(contributor.getEmail(), walletAddress);
+        String txHash = sendRewardSafely(contributor.getEmail(), walletAddress);
+
+        // 6. txHash를 Translation에 저장 (AdminController에서 성공 여부 판단에 사용)
+        if (txHash != null) {
+            translation.setBlockchainHash(txHash);
+            translationRepository.save(translation);
+        }
     }
 
     /**
      * KMS 보상 전송 (예외 격리).
      * 블록체인 전송 실패가 DB 트랜잭션을 롤백하지 않도록 별도 처리.
      * 실패 시 감사 로그에 기록되고 관리자가 재처리할 수 있음.
+     * @return txHash (성공 시) 또는 null (실패 시)
      */
-    private void sendRewardSafely(String email, String walletAddress) {
+    private String sendRewardSafely(String email, String walletAddress) {
         try {
             String txHash = SecurityContextUtil.runWith(
                 WalletRole.REWARD,
@@ -93,11 +100,13 @@ public class ContributionService {
             );
             log.info("[Contribution] OMT 보상 전송 완료: email={}, address={}, amount={}, txHash={}",
                 email, walletAddress, rewardAmountPerCase, txHash);
+            return txHash;
         } catch (Exception e) {
             // 블록체인 전송 실패 → DB 롤백 없이 경고 로그만 기록
             // EnterpriseWalletService 내부에서 AuditLog에 FAILURE로 이미 기록됨
             log.error("[Contribution] OMT 보상 전송 실패 (수동 재처리 필요): email={}, address={}, error={}",
                 email, walletAddress, e.getMessage());
+            return null;
         }
     }
 }
