@@ -362,7 +362,8 @@
 <!-- ═══════════════════════════════════════════════════════
      JavaScript
 ════════════════════════════════════════════════════════ -->
-<script>
+<script th:inline="javascript">
+/*<![CDATA[*/
 // ── 상수 ─────────────────────────────────────────────────
 const POLL_SEC    = 30;
 const PAGE_SIZE   = 20;
@@ -384,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.manualRefresh   = manualRefresh;
 window.changePage      = changePage;
 window.openModal       = openModal;
-window.closeModal      = closeModal;
+window.closeModal       = closeModal;
 window.closeModalDirect = closeModalDirect;
 
 // ═══════════════════════════════════════════════════════
@@ -744,6 +745,7 @@ function resultIconClass(r) {
         PENDING: 'fa-solid fa-shield-halved text-amber-500'
     }[r] ?? 'fa-solid fa-shield text-slate-400';
 }
+/*]]>*/
 </script>
 </body>
 </html>
