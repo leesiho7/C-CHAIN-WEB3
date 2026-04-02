@@ -62,7 +62,6 @@ public class AdminController {
      * 2. 상세 검수 페이지 (ChatGPT GPT-4o 실시간 채점 연동)
      */
     @GetMapping("/admin/detail/{id}")
-    @Transactional(readOnly = true)
     public String viewDetail(@PathVariable("id") Long id, HttpSession session, Model model) {
         Member loginMember = (Member) session.getAttribute("loginMember");
         if (loginMember == null || !"admin@cchain.com".equals(loginMember.getEmail())) {

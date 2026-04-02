@@ -84,15 +84,41 @@ public class AiService {
     private Map<String, Object> parseGptResponse(Map<String, Object> body) {
         try {
             List<?> choices = (List<?>) body.get("choices");
+            if (choices == null || choices.isEmpty()) {
+                return createErrorMap("GPT 응답에 choices가 없습니다.");
+            }
             Map<?, ?> choice = (Map<?, ?>) choices.get(0);
             Map<?, ?> message = (Map<?, ?>) choice.get("message");
             String content = (String) message.get("content");
 
-            return new ObjectMapper().readValue(content, Map.class);
+            // JSON String -> Map 변환
+            Map<String, Object> rawResult = new ObjectMapper().readValue(content, Map.class);
+            Map<String, Object> finalResult = new HashMap<>();
+
+            // 타입 안정성을 위해 명시적 변환 수행 (타임리프 비교 연산 오류 방지)
+            finalResult.put("score", convertToSafeInt(rawResult.get("score"), 0));
+            finalResult.put("similarity_with_ai", convertToSafeInt(rawResult.get("similarity_with_ai"), 0));
+            finalResult.put("feedback", rawResult.getOrDefault("feedback", "피드백을 생성할 수 없습니다."));
+
+            return finalResult;
         } catch (Exception e) {
             log.error("❌ JSON 파싱 실패: {}", e.getMessage());
-            return createErrorMap("데이터 해석 실패");
+            return createErrorMap("데이터 해석 실패: " + e.getMessage());
         }
+    }
+
+    private int convertToSafeInt(Object value, int defaultValue) {
+        if (value == null) return defaultValue;
+        try {
+            if (value instanceof Number) {
+                return ((Number) value).intValue();
+            } else if (value instanceof String) {
+                return Integer.parseInt((String) value);
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ 숫자 변환 실패 (value: {}): {}", value, e.getMessage());
+        }
+        return defaultValue;
     }
 
     public Map<String, Object> testVerify(String text) {
@@ -100,10 +126,10 @@ public class AiService {
     }
 
     private Map<String, Object> createErrorMap(String message) {
-        return Map.of(
-            "score", 0, 
-            "similarity_with_ai", 0, 
-            "feedback", message
-        );
+        Map<String, Object> errorMap = new HashMap<>();
+        errorMap.put("score", 0);
+        errorMap.put("similarity_with_ai", 0);
+        errorMap.put("feedback", message);
+        return errorMap;
     }
 }
