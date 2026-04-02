@@ -165,6 +165,36 @@
         </div>
     </div>
 
+    <!-- 문서 추가 모달 -->
+    <div id="add-document-modal" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4">
+        <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onclick="closeAddDocumentModal()"></div>
+        <div class="relative bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl">
+            <h3 class="text-xl font-black text-gray-900 mb-6">문서 추가하기</h3>
+            <div class="flex flex-col gap-4">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1 block">제목 (중국어)</label>
+                    <input id="doc-titleCn" type="text" placeholder="文档标题" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1 block">원문 내용 (중국어)</label>
+                    <textarea id="doc-contentCn" rows="5" placeholder="原文内容..." class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"></textarea>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1 block">출처</label>
+                    <input id="doc-sourceName" type="text" placeholder="예) 腾讯云, 阿里云" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1 block">요약</label>
+                    <input id="doc-summary" type="text" placeholder="문서 내용 한 줄 요약" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="submitAddDocument()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold transition">등록하기</button>
+                <button onclick="closeAddDocumentModal()" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-2xl font-bold transition">취소</button>
+            </div>
+        </div>
+    </div>
+
     <div id="tx-loader" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] hidden flex-col items-center justify-center text-white">
         <div class="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
         <p class="mt-6 font-bold tracking-widest">CHAIN SYNCING...</p>
@@ -273,7 +303,65 @@
         }
 
         function logoutAll() { location.href = '/logout'; }
-        
+
+        // 문서 추가 모달
+        function openAddDocumentModal() {
+            document.getElementById('doc-titleCn').value = '';
+            document.getElementById('doc-contentCn').value = '';
+            document.getElementById('doc-sourceName').value = '';
+            document.getElementById('doc-summary').value = '';
+            document.getElementById('add-document-modal').classList.remove('hidden');
+        }
+
+        function closeAddDocumentModal() {
+            document.getElementById('add-document-modal').classList.add('hidden');
+        }
+
+        async function submitAddDocument() {
+            const titleCn = document.getElementById('doc-titleCn').value.trim();
+            const contentCn = document.getElementById('doc-contentCn').value.trim();
+            const sourceName = document.getElementById('doc-sourceName').value.trim();
+            const summary = document.getElementById('doc-summary').value.trim();
+
+            if (!titleCn || !contentCn) {
+                alert('제목과 원문 내용은 필수입니다.');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/document/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ titleCn, contentCn, sourceName, summary })
+                });
+                if (res.ok) {
+                    closeAddDocumentModal();
+                    location.reload();
+                } else {
+                    const data = await res.json();
+                    alert('오류: ' + (data.message || '문서 등록에 실패했습니다.'));
+                }
+            } catch (e) {
+                alert('통신 오류가 발생했습니다.');
+            }
+        }
+
+        // 문서 삭제
+        async function deleteDocument(id) {
+            if (!confirm('정말로 삭제하시겠습니까?')) return;
+            try {
+                const res = await fetch(`/api/document/delete/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    location.reload();
+                } else {
+                    const data = await res.json();
+                    alert('오류: ' + (data.message || '삭제에 실패했습니다.'));
+                }
+            } catch (e) {
+                alert('통신 오류가 발생했습니다.');
+            }
+        }
+
         // 초기화
         window.onload = updateBalance;
         
