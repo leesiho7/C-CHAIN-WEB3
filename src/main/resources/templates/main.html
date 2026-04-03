@@ -295,7 +295,7 @@
                     body: JSON.stringify({ documentId: currentDocId, contentKr: content })
                 });
                 if(res.ok) { 
-                    alert("제출 완료 및 OMT 보상이 지급되었습니다!"); 
+                    alert("제출 완료 및 운영자의 검수완료 후 OMT토큰이 보상 지급됩니다.!"); 
                     location.reload(); 
                 }
             } catch(e) { alert("통신 오류가 발생했습니다."); }
