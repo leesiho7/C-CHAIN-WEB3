@@ -15,6 +15,7 @@ import org.web3j.protocol.core.methods.response.Log;
 
 import java.math.BigInteger;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -74,9 +75,17 @@ public class BlockchainMonitoringService {
     @Value("${wallet.monitoring.max-block-gap:500}")
     private int maxBlockGap;
 
-    /** 감시 대상 토큰 컨트랙트 주소 목록 (콤마 구분) */
+    /** 감시 대상 토큰 컨트랙트 주소 목록 (콤마 구분, 미설정 시 내장 기본값 사용) */
     @Value("${wallet.monitoring.watch-addresses:}")
     private String watchAddressesConfig;
+
+    // SyncService 와 동일한 기본 감시 주소 (환경변수 미설정 시 fallback)
+    private static final List<String> DEFAULT_WATCH_ADDRESSES = List.of(
+        "0x779877a7b0d9e8603169ddbd7836e478b4624789", // LINK
+        "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238", // USDC
+        "0xfff9976782d46cc05635d1e5f6bd092480392204", // WETH
+        "0xe24655d049e35922f306869a19c62394c8657155"  // DAI
+    );
 
     // =========================================================
     // MONITOR-01: 입금 흐름 이상 징후 탐지 (5분마다)
@@ -89,7 +98,7 @@ public class BlockchainMonitoringService {
      * 누락된 트랜잭션은 인덱서 장애 또는 데이터 손실의 신호일 수 있습니다.
      * 누락률이 10%를 초과하면 Critical 레벨로 경고합니다.
      */
-    @Scheduled(fixedDelay = 5 * 60 * 1000) // 5분마다
+    @Scheduled(fixedDelay = 15 * 60 * 1000) // 15분마다
     public void monitorDepositFlowAnomalies() {
         Web3j web3j = web3jProvider.getIfAvailable();
         if (web3j == null) {
@@ -172,7 +181,7 @@ public class BlockchainMonitoringService {
      *
      * 유령 트랜잭션 발견 시 Critical 레벨로 경고합니다.
      */
-    @Scheduled(fixedDelay = 10 * 60 * 1000) // 10분마다
+    @Scheduled(fixedDelay = 30 * 60 * 1000) // 30분마다
     public void verifyDbConsistency() {
         Web3j web3j = web3jProvider.getIfAvailable();
         if (web3j == null) {
@@ -181,10 +190,10 @@ public class BlockchainMonitoringService {
         }
 
         try {
-            // ① DB에서 최근 50건 조회 (최신 순)
+            // ① DB에서 최근 10건 조회 (최신 순) — 샘플링으로도 유령 트랜잭션 탐지에 충분
             List<OmtTransaction> recentDbTxs = txRepository.findAll(
                     org.springframework.data.domain.PageRequest.of(
-                            0, 50,
+                            0, 10,
                             org.springframework.data.domain.Sort.by(
                                     org.springframework.data.domain.Sort.Direction.DESC,
                                     "blockNumber")
@@ -251,7 +260,7 @@ public class BlockchainMonitoringService {
      * 블록 갭이 크면 실시간 입금 확인이 지연되며,
      * 사용자 경험과 거래소 운영에 직접적 영향을 줍니다.
      */
-    @Scheduled(fixedDelay = 5 * 60 * 1000) // 5분마다
+    @Scheduled(fixedDelay = 15 * 60 * 1000) // 15분마다
     public void detectBlockGap() {
         Web3j web3j = web3jProvider.getIfAvailable();
         if (web3j == null) return;
@@ -309,15 +318,32 @@ public class BlockchainMonitoringService {
     private List<Log> fetchTransferLogs(Web3j web3j,
                                          BigInteger fromBlock,
                                          BigInteger toBlock) throws Exception {
+        List<String> addresses = resolveWatchAddresses();
         EthFilter filter = new EthFilter(
                 DefaultBlockParameter.valueOf(fromBlock),
                 DefaultBlockParameter.valueOf(toBlock),
-                List.of() // 모든 컨트랙트 감시 (주소 필터 없음)
+                addresses
         );
         filter.addSingleTopic(TRANSFER_TOPIC);
 
         return web3j.ethGetLogs(filter).send().getLogs().stream()
                 .map(r -> (Log) r.get())
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 감시 주소 목록을 반환한다.
+     * wallet.monitoring.watch-addresses 가 설정되어 있으면 그 값을 사용하고,
+     * 비어 있으면 DEFAULT_WATCH_ADDRESSES(SyncService 와 동일한 목록)를 사용한다.
+     */
+    private List<String> resolveWatchAddresses() {
+        if (watchAddressesConfig != null && !watchAddressesConfig.isBlank()) {
+            return Arrays.stream(watchAddressesConfig.split(","))
+                    .map(String::trim)
+                    .map(String::toLowerCase)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+        }
+        return DEFAULT_WATCH_ADDRESSES;
     }
 }

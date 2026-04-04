@@ -17,8 +17,10 @@ public class AiService {
     @Value("${openai.api.key}")
     private String apiKey;
 
+    private final RestTemplate restTemplate;
+
     // OpenAI API 엔드포인트
-    private final String GPT_API_URL = "https://api.openai.com/v1/chat/completions";
+    private static final String GPT_API_URL = "https://api.openai.com/v1/chat/completions";
 
     /**
      * [ChatGPT 전용] 번역 검증 및 점수 계산
@@ -41,8 +43,6 @@ public class AiService {
         );
 
         try {
-            RestTemplate restTemplate = new RestTemplate();
-            
             // 2. 헤더 설정
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
