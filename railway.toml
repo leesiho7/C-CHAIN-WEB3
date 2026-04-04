@@ -4,8 +4,8 @@ builder = "NIXPACKS"
 buildCommand = "MAVEN_OPTS='-Xmx1g -XX:MaxMetaspaceSize=256m -XX:+UseG1GC' ./mvnw package -DskipTests -q"
 
 [deploy]
-# Railway 컨테이너 512MB 한도 내 JVM 메모리 분배:
-# Heap 300m + Metaspace 96m + CodeCache 48m + JVM오버헤드 ~60m = ≈504m (여유 ~8m)
-startCommand = "java -XX:+UseG1GC -Xmx300m -XX:MaxMetaspaceSize=96m -XX:ReservedCodeCacheSize=48m -XX:MaxHeapFreeRatio=30 -XX:MinHeapFreeRatio=10 -Djava.security.egd=file:/dev/./urandom -jar target/cchain-0.1.jar"
+# Railway 유료 플랜 1GB 한도 기준:
+# Heap 512m + Metaspace 128m + CodeCache 64m + JVM오버헤드 ~80m = ≈784m (여유 ~240m)
+startCommand = "java -XX:+UseG1GC -Xmx512m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=64m -XX:MaxHeapFreeRatio=30 -XX:MinHeapFreeRatio=10 -Djava.security.egd=file:/dev/./urandom -jar target/cchain-0.1.jar"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
